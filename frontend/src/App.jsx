@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useEffect } from "react";
+import axios from "axios";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -50,18 +52,38 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppRoutes />
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+const App = () => {
+  // Wake up backend on app load (Render free tier sleeps after inactivity)
+  useEffect(() => {
+    const wakeBackend = async () => {
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+        if (apiBaseUrl && !apiBaseUrl.includes("localhost")) {
+          // Extract base URL and ping health endpoint
+          const baseUrl = apiBaseUrl.replace("/api", "");
+          await axios.get(`${baseUrl}/health`, { timeout: 10000 });
+          console.log("Backend wakened successfully");
+        }
+      } catch (error) {
+        console.log("Backend wake attempt:", error.message);
+      }
+    };
+    wakeBackend();
+  }, []);
+
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;

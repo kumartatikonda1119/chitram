@@ -7,13 +7,6 @@ import { protect } from "./middleware/auth.js";
 import favoriteRoutes from "./routes/favourite.route.js";
 import listRoutes from "./routes/list.route.js";
 import cors from "cors";
-import path from "path";
-import { existsSync } from "fs";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
 const app = express();
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -71,20 +64,8 @@ app.get("/profile", protect, (req, res) => {
   res.json({ message: "Protected route accessed", user: req.user });
 });
 app.get("/health", (req, res) => {
-  res.send("Chitram is running");
+  res.json({ status: "ok", message: "Chitram backend is running" });
 });
-
-if (existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
-
-  app.use((req, res, next) => {
-    if (req.path.startsWith("/api") || path.extname(req.path)) {
-      next();
-      return;
-    }
-    res.sendFile(path.join(frontendDistPath, "index.html"));
-  });
-}
 
 app.listen(port, () => {
   console.log(`server is running on port ${port}`);
