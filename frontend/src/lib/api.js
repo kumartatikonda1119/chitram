@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 // Create axios instance
 const api = axios.create({
@@ -28,12 +29,15 @@ api.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       // Only redirect if not already on login/register
-      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
-        window.location.href = '/login';
+      if (
+        !window.location.pathname.includes("/login") &&
+        !window.location.pathname.includes("/register")
+      ) {
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Auth APIs
@@ -62,10 +66,8 @@ export const listAPI = {
 
 // Search APIs (existing TMDB)
 export const searchAPI = {
-  searchMovie: (id) =>
-    axios.get(`http://localhost:5000/api/search/searchMovie/${id}`),
-  searchMovies: (query) =>
-    axios.get(`http://localhost:5000/api/search/search?query=${query}`),
+  searchMovie: (id) => api.get(`/search/searchMovie/${id}`),
+  searchMovies: (query) => api.get(`/search/search?query=${query}`),
 };
 
 export default api;
