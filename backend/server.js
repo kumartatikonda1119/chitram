@@ -56,7 +56,7 @@ app.use("/api/lists", listRoutes);
 app.get("/profile", protect, (req, res) => {
   res.json({ message: "Protected route accessed", user: req.user });
 });
-app.get("/", (req, res) => {
+app.get("/health", (req, res) => {
   res.send("Chitram is running");
 });
 
