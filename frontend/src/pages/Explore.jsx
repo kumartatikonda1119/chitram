@@ -6,7 +6,9 @@ import MovieCard from "@/components/MovieCard";
 import { Award, Clock, Flame, Loader2, Star, TrendingUp } from "lucide-react";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '/api/search') || "http://localhost:5000/api/search";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.replace("/api", "/api/search") ||
+  "http://localhost:5000/api/search";
 
 const EXPLORE_SECTIONS = [
   {

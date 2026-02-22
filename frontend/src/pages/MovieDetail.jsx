@@ -21,7 +21,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const MovieDetail = () => {
   const { id } = useParams();
@@ -50,7 +51,9 @@ const MovieDetail = () => {
   const fetchMovieDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/search/searchMovie/${id}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/search/searchMovie/${id}`,
+      );
       setMovie(response.data.data);
     } catch (error) {
       console.error("Error fetching movie details:", error);
@@ -64,11 +67,14 @@ const MovieDetail = () => {
     if (!user) return;
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE_URL}/favourite/getFavorites`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.get(
+        `${API_BASE_URL}/favourite/getFavorites`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       const favorites = response.data.favorites;
       setIsFavorite(favorites.some((fav) => fav.movieId === parseInt(id)));
     } catch (error) {
@@ -117,7 +123,7 @@ const MovieDetail = () => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         setIsFavorite(true);
         toast.success("Added to favorites!");
@@ -159,7 +165,7 @@ const MovieDetail = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       toast.success(`Added to "${selectedList.name}"!`);
       setShowListModal(false);
@@ -191,7 +197,7 @@ const MovieDetail = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       setLists([...lists, response.data]);
       setNewListName("");

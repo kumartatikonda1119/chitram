@@ -14,7 +14,9 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '/api/search') || "http://localhost:5000/api/search";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.replace("/api", "/api/search") ||
+  "http://localhost:5000/api/search";
 
 const ActorDetail = () => {
   const { id } = useParams();
@@ -142,9 +144,9 @@ const ActorDetail = () => {
   const allMoviesMap = new Map();
   [...allMovies, ...(isDirectorMode ? directorMovies : allCrew)].forEach(
     (movie) => {
-    if (movie.poster_path) {
-      allMoviesMap.set(movie.id, movie);
-    }
+      if (movie.poster_path) {
+        allMoviesMap.set(movie.id, movie);
+      }
     },
   );
   const allUniqueMovies = sortMovies(Array.from(allMoviesMap.values()));
@@ -230,7 +232,9 @@ const ActorDetail = () => {
                   <span className="inline-flex items-center gap-1.5">
                     <Award className="h-4 w-4 text-primary" />
                     <span className="font-semibold text-foreground">
-                      {isDirectorMode ? "Director" : person.known_for_department}
+                      {isDirectorMode
+                        ? "Director"
+                        : person.known_for_department}
                     </span>
                   </span>
                 )}

@@ -3,20 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import {
-  Heart,
-  List,
-  Share2,
-  Plus,
-  Trash2,
-  User,
-  Loader2,
-} from "lucide-react";
+import { Heart, List, Share2, Plus, Trash2, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -46,12 +39,15 @@ const Profile = () => {
   const fetchFavorites = async () => {
     try {
       const token = localStorage.getItem("token");
-      
-      const response = await axios.get(`${API_BASE_URL}/favourite/getFavorites`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+
+      const response = await axios.get(
+        `${API_BASE_URL}/favourite/getFavorites`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       const favs = response.data.favorites || [];
       setFavorites(favs);
 
@@ -64,7 +60,7 @@ const Profile = () => {
       const moviePromises = favs.map(async (fav) => {
         try {
           const movieRes = await axios.get(
-            `${API_BASE_URL}/search/searchMovie/${fav.movieId}`
+            `${API_BASE_URL}/search/searchMovie/${fav.movieId}`,
           );
           return movieRes.data.data;
         } catch (error) {
@@ -85,7 +81,7 @@ const Profile = () => {
   const fetchLists = async () => {
     try {
       const token = localStorage.getItem("token");
-      
+
       const response = await axios.get(`${API_BASE_URL}/lists`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -98,7 +94,6 @@ const Profile = () => {
         return;
       }
 
-
       // Fetch movies for each list
       const listsWithMovies = await Promise.all(
         userLists.map(async (list) => {
@@ -109,10 +104,9 @@ const Profile = () => {
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },
-              }
+              },
             );
             const movieIds = moviesRes.data || [];
-
 
             if (movieIds.length === 0) {
               return { ...list, movies: [] };
@@ -123,7 +117,7 @@ const Profile = () => {
               movieIds.map(async (item) => {
                 try {
                   const movieRes = await axios.get(
-                    `${API_BASE_URL}/search/searchMovie/${item.movieId}`
+                    `${API_BASE_URL}/search/searchMovie/${item.movieId}`,
                   );
                   return movieRes.data.data;
                 } catch (error) {
@@ -143,7 +137,6 @@ const Profile = () => {
           }
         }),
       );
-
 
       setLists(listsWithMovies);
     } catch (error) {
@@ -168,7 +161,7 @@ const Profile = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       setLists([...lists, { ...response.data, movies: [] }]);
       setNewListName("");
