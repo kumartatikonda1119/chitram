@@ -19,12 +19,25 @@ dotenv.config();
 const port = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const MONGODB_URI = process.env.MONGODB_URI;
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL;
 
-const allowedOrigins = FRONTEND_URL
-  ? FRONTEND_URL.split(",")
-      .map((url) => url.trim())
-      .filter(Boolean)
-  : [];
+const normalizeOrigin = (value) => {
+  if (!value) return null;
+  try {
+    return new URL(value.trim()).origin;
+  } catch {
+    return null;
+  }
+};
+
+const allowedOrigins = [
+  ...(FRONTEND_URL
+    ? FRONTEND_URL.split(",")
+        .map((url) => normalizeOrigin(url))
+        .filter(Boolean)
+    : []),
+  normalizeOrigin(RENDER_EXTERNAL_URL),
+].filter(Boolean);
 
 try {
   await mongoose.connect(MONGODB_URI);
@@ -35,15 +48,16 @@ try {
 app.use(
   cors({
     origin: (origin, callback) => {
+      const normalizedOrigin = normalizeOrigin(origin);
       if (
         !origin ||
         allowedOrigins.length === 0 ||
-        allowedOrigins.includes(origin)
+        allowedOrigins.includes(normalizedOrigin)
       ) {
         callback(null, true);
         return;
       }
-      callback(new Error("Not allowed by CORS"));
+      callback(null, false);
     },
     credentials: true,
   }),
