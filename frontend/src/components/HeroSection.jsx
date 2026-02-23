@@ -11,9 +11,9 @@ import {
 
 const HeroSection = () => {
   return (
-    <section className="relative h-[100dvh] min-h-[600px] flex items-center justify-center overflow-hidden bg-gradient-to-b from-secondary/50 via-background to-background">
+    <section className="relative min-h-[100dvh] flex items-start justify-center overflow-hidden w-full max-w-full bg-gradient-to-b from-secondary/50 via-background to-background">
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden w-full max-w-full">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse delay-700" />
         <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -21,24 +21,24 @@ const HeroSection = () => {
 
       {/* Film strip decorative elements */}
       <div
-        className="absolute left-0 top-0 h-full w-12 opacity-5 bg-repeat-y"
+        className="hidden md:block absolute left-0 top-0 h-full w-12 opacity-5 bg-repeat-y"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='64' viewBox='0 0 48 64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='64' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='4' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3C/svg%3E")`,
         }}
       />
       <div
-        className="absolute right-0 top-0 h-full w-12 opacity-5 bg-repeat-y"
+        className="hidden md:block absolute right-0 top-0 h-full w-12 opacity-5 bg-repeat-y"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='64' viewBox='0 0 48 64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='64' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='4' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3C/svg%3E")`,
         }}
       />
 
-      <div className="relative z-10 container mx-auto px-4 md:px-6 text-center py-16">
+      <div className="relative z-10 container mx-auto px-4 md:px-6 text-center pt-24 pb-16 max-w-full w-full">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-4xl mx-auto space-y-6"
+          className="max-w-4xl mx-auto space-y-4 md:space-y-6"
         >
           {/* Badge */}
           <motion.div
@@ -61,7 +61,7 @@ const HeroSection = () => {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold leading-tight"
             >
-              <span className="text-primary">chitram</span>
+              <span className="text-primary">Chitram</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -145,7 +145,9 @@ const HeroSection = () => {
                 <h3 className="font-semibold text-foreground text-xs sm:text-sm mb-1">
                   {item.title}
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">{item.desc}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {item.desc}
+                </p>
               </motion.div>
             ))}
           </motion.div>

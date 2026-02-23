@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GENRES, LANGUAGES } from "@/lib/types";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Star,
   Heart,
@@ -16,6 +17,10 @@ import {
   Clock,
   Play,
   Loader2,
+  Film,
+  MapPin,
+  Building2,
+  Volume2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
@@ -36,6 +41,9 @@ const MovieDetail = () => {
   const [lists, setLists] = useState([]);
   const [selectedList, setSelectedList] = useState(null);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [activeTab, setActiveTab] = useState("cast");
+  const [crewData, setCrewData] = useState({});
+  const [trailerUrl, setTrailerUrl] = useState(null);
 
   useEffect(() => {
     fetchMovieDetails();
@@ -55,6 +63,84 @@ const MovieDetail = () => {
         `${API_BASE_URL}/search/searchMovie/${id}`,
       );
       setMovie(response.data.data);
+
+      // Extract trailer URL from videos - with flexible matching
+      if (
+        response.data.data.videos?.results &&
+        response.data.data.videos.results.length > 0
+      ) {
+        // First try: exact match for Trailer type on YouTube
+        let trailerFound = response.data.data.videos.results.find(
+          (v) => v.type === "Trailer" && v.site === "YouTube",
+        );
+
+        // Fallback: any YouTube video with "Trailer" in name (case insensitive)
+        if (!trailerFound) {
+          trailerFound = response.data.data.videos.results.find(
+            (v) =>
+              v.site === "YouTube" && v.name?.toLowerCase().includes("trailer"),
+          );
+        }
+
+        // Fallback: just get any YouTube video
+        if (!trailerFound) {
+          trailerFound = response.data.data.videos.results.find(
+            (v) => v.site === "YouTube",
+          );
+        }
+
+        if (trailerFound) {
+          setTrailerUrl(`https://www.youtube.com/embed/${trailerFound.key}`);
+          console.log("Trailer found:", trailerFound);
+        } else {
+          console.log(
+            "No YouTube videos found. Available videos:",
+            response.data.data.videos.results,
+          );
+        }
+      } else {
+        console.log("No videos in response for movie:", id);
+      }
+
+      // Fetch crew details for cast and crew members in parallel
+      if (response.data.data.credits) {
+        const crewMap = {};
+        const fetchPromises = [];
+
+        // Collect all people to fetch (crew + cast)
+        const allPeople = [
+          ...(response.data.data.credits.crew || []),
+          ...(response.data.data.credits.cast || []),
+        ];
+
+        // Create promises for all fetches
+        allPeople.forEach((person) => {
+          if (!crewMap[person.id]) {
+            fetchPromises.push(
+              axios
+                .get(`${API_BASE_URL}/search/searchActor?actorid=${person.id}`)
+                .then((res) => {
+                  if (res.data.data?.profile_path) {
+                    crewMap[person.id] = res.data.data.profile_path;
+                  }
+                })
+                .catch((err) => {
+                  console.error(
+                    `Error fetching person details for ${person.id}:`,
+                    err,
+                  );
+                }),
+            );
+          }
+        });
+
+        // Wait for all fetches to complete
+        if (fetchPromises.length > 0) {
+          await Promise.all(fetchPromises);
+        }
+
+        setCrewData(crewMap);
+      }
     } catch (error) {
       console.error("Error fetching movie details:", error);
       toast.error("Failed to load movie details");
@@ -208,6 +294,44 @@ const MovieDetail = () => {
     }
   };
 
+  const getDirector = () => {
+    if (!movie.credits?.crew) return null;
+    return movie.credits.crew.find((c) => c.job === "Director");
+  };
+
+  const getProducers = () => {
+    if (!movie.credits?.crew) return [];
+    return movie.credits.crew.filter((c) => c.job === "Producer").slice(0, 5);
+  };
+
+  const getWriters = () => {
+    if (!movie.credits?.crew) return [];
+    return movie.credits.crew
+      .filter((c) => c.department === "Writing")
+      .slice(0, 5);
+  };
+
+  const getComposers = () => {
+    if (!movie.credits?.crew) return [];
+    return movie.credits.crew
+      .filter((c) => c.job === "Original Music Composer")
+      .slice(0, 3);
+  };
+
+  const getVisibleTabsCount = () => {
+    let count = 0;
+    if (movie.credits?.cast?.length > 0) count++;
+    if (
+      movie.credits?.crew?.length > 0 ||
+      getProducers().length > 0 ||
+      getWriters().length > 0 ||
+      getComposers().length > 0
+    )
+      count++;
+    if (trailerUrl) count++;
+    return count;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -237,9 +361,13 @@ const MovieDetail = () => {
 
   const handleShare = () => {
     const shareUrl = window.location.href;
-    const shareText = `Check out "${movie.title}" on Chitram! 🎬`;
+    const shareText = `Check out "${movie.title}" on Chitram! 🎬\n\nDo you want to make your own list? Visit https://chitram.onrender.com`;
     if (navigator.share) {
-      navigator.share({ title: movie.title, text: shareText, url: shareUrl });
+      navigator.share({
+        title: movie.title,
+        text: `${shareText}\n${shareUrl}`,
+        url: shareUrl,
+      });
     } else {
       navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
       toast.success("Link copied to clipboard!");
@@ -247,7 +375,7 @@ const MovieDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden w-full">
       <Navbar />
       <div className="pt-20">
         <div className="relative h-[40vh] md:h-[50vh] bg-secondary overflow-hidden">
@@ -363,6 +491,87 @@ const MovieDetail = () => {
                 ))}
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 text-sm">
+                {getDirector() && (
+                  <div className="flex items-start gap-3">
+                    <Film className="h-4 w-4 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                        Director
+                      </p>
+                      <Link
+                        to={`/person/${getDirector().id}`}
+                        className="font-medium text-foreground hover:text-primary transition-colors"
+                      >
+                        {getDirector().name}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+                {movie.origin_country && movie.origin_country.length > 0 && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-4 w-4 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                        Country
+                      </p>
+                      <p className="font-medium text-foreground">
+                        {movie.origin_country.join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {movie.production_companies &&
+                  movie.production_companies.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <Building2 className="h-4 w-4 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                          Production
+                        </p>
+                        <p className="font-medium text-foreground">
+                          {movie.production_companies
+                            .slice(0, 2)
+                            .map((p) => p.name)
+                            .join(", ")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                {movie.status && (
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/20 text-primary text-xs font-bold mt-0.5">
+                      •
+                    </span>
+                    <div>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                        Status
+                      </p>
+                      <p className="font-medium text-foreground">
+                        {movie.status}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {movie.spoken_languages &&
+                  movie.spoken_languages.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <Volume2 className="h-4 w-4 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                          Languages
+                        </p>
+                        <p className="font-medium text-foreground">
+                          {movie.spoken_languages
+                            .slice(0, 2)
+                            .map((l) => l.english_name)
+                            .join(", ")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+              </div>
+
               <p className="text-muted-foreground leading-relaxed max-w-2xl">
                 {movie.overview}
               </p>
@@ -476,44 +685,261 @@ const MovieDetail = () => {
           </div>
         </div>
 
-        {movie.credits?.cast && movie.credits.cast.length > 0 && (
+        {(movie.credits?.cast?.length > 0 ||
+          movie.credits?.crew?.length > 0 ||
+          trailerUrl ||
+          getProducers().length > 0 ||
+          getWriters().length > 0 ||
+          getComposers().length > 0) && (
           <section className="py-16">
             <div className="container mx-auto px-4 md:px-6">
-              <h2 className="text-2xl font-display font-bold text-foreground mb-8">
-                Cast
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
-                {movie.credits.cast.slice(0, 12).map((person, i) => (
-                  <motion.div
-                    key={person.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
-                    <Link to={`/person/${person.id}`} className="group block">
-                      <div className="aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
-                        {person.profile_path ? (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w500${person.profile_path}`}
-                            alt={person.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Users className="h-12 w-12 text-muted" />
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+              >
+                <TabsList
+                  className={`grid w-full max-w-md ${
+                    getVisibleTabsCount() === 3
+                      ? "grid-cols-3"
+                      : getVisibleTabsCount() === 2
+                        ? "grid-cols-2"
+                        : "grid-cols-1"
+                  }`}
+                >
+                  {movie.credits?.cast?.length > 0 && (
+                    <TabsTrigger value="cast">Cast</TabsTrigger>
+                  )}
+                  {(movie.credits?.crew?.length > 0 ||
+                    getProducers().length > 0 ||
+                    getWriters().length > 0 ||
+                    getComposers().length > 0) && (
+                    <TabsTrigger value="crew">Crew</TabsTrigger>
+                  )}
+                  {trailerUrl && (
+                    <TabsTrigger value="trailer">Videos</TabsTrigger>
+                  )}
+                </TabsList>
+
+                {movie.credits?.cast?.length > 0 && (
+                  <TabsContent value="cast" className="mt-8">
+                    <h2 className="text-2xl font-display font-bold text-foreground mb-8">
+                      Cast
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+                      {movie.credits.cast.slice(0, 18).map((person, i) => (
+                        <motion.div
+                          key={person.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.05 }}
+                        >
+                          <Link
+                            to={`/person/${person.id}`}
+                            className="group block"
+                          >
+                            <div className="aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
+                              {person.profile_path ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w500${person.profile_path}`}
+                                  alt={person.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <Users className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <p className="mt-2 text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                              {person.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {person.character}
+                            </p>
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                )}
+
+                {(movie.credits?.crew?.length > 0 ||
+                  getProducers().length > 0 ||
+                  getWriters().length > 0 ||
+                  getComposers().length > 0) && (
+                  <TabsContent value="crew" className="mt-8">
+                    <div className="space-y-12">
+                      {getDirector() && (
+                        <div>
+                          <h3 className="text-lg font-display font-bold text-foreground mb-6">
+                            Director
+                          </h3>
+                          <Link
+                            to={`/person/${getDirector().id}`}
+                            className="group inline-block"
+                          >
+                            <div className="aspect-[2/3] w-40 rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
+                              {crewData[getDirector().id] ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w500${crewData[getDirector().id]}`}
+                                  alt={getDirector().name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <Users className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <p className="mt-2 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                              {getDirector().name}
+                            </p>
+                          </Link>
+                        </div>
+                      )}
+
+                      {getProducers().length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-display font-bold text-foreground mb-6">
+                            Producers
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                            {getProducers().map((producer, i) => (
+                              <motion.div
+                                key={producer.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                              >
+                                <Link
+                                  to={`/person/${producer.id}`}
+                                  className="group block"
+                                >
+                                  <div className="aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
+                                    {crewData[producer.id] ? (
+                                      <img
+                                        src={`https://image.tmdb.org/t/p/w500${crewData[producer.id]}`}
+                                        alt={producer.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                                        <Users className="h-12 w-12 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="mt-2 text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                                    {producer.name}
+                                  </p>
+                                </Link>
+                              </motion.div>
+                            ))}
                           </div>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                        {person.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
-                        {person.character}
-                      </p>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
+                        </div>
+                      )}
+
+                      {getWriters().length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-display font-bold text-foreground mb-6">
+                            Writers
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                            {getWriters().map((writer, i) => (
+                              <motion.div
+                                key={writer.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                              >
+                                <Link
+                                  to={`/person/${writer.id}`}
+                                  className="group block"
+                                >
+                                  <div className="aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
+                                    {crewData[writer.id] ? (
+                                      <img
+                                        src={`https://image.tmdb.org/t/p/w500${crewData[writer.id]}`}
+                                        alt={writer.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                                        <Users className="h-12 w-12 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="mt-2 text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                                    {writer.name}
+                                  </p>
+                                </Link>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {getComposers().length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-display font-bold text-foreground mb-6">
+                            Composers
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                            {getComposers().map((composer, i) => (
+                              <motion.div
+                                key={composer.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                              >
+                                <Link
+                                  to={`/person/${composer.id}`}
+                                  className="group block"
+                                >
+                                  <div className="aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
+                                    {crewData[composer.id] ? (
+                                      <img
+                                        src={`https://image.tmdb.org/t/p/w500${crewData[composer.id]}`}
+                                        alt={composer.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                                        <Users className="h-12 w-12 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="mt-2 text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                                    {composer.name}
+                                  </p>
+                                </Link>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                )}
+
+                {trailerUrl && (
+                  <TabsContent value="trailer" className="mt-8">
+                    <h2 className="text-2xl font-display font-bold text-foreground mb-8">
+                      Related Videos
+                    </h2>
+                    <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={trailerUrl}
+                        title={`${movie.title} Video`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </TabsContent>
+                )}
+              </Tabs>
             </div>
           </section>
         )}

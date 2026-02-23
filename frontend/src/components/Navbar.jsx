@@ -23,8 +23,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass">
-      <div className="container mx-auto px-4 md:px-6">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass w-full">
+      <div className="container mx-auto px-4 md:px-6 max-w-full">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 group">
             <Film className="h-7 w-7 text-primary transition-transform group-hover:rotate-12" />
@@ -88,8 +88,9 @@ const Navbar = () => {
             )}
 
             <button
-              className="md:hidden p-2 text-muted-foreground"
+              className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50"
               onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle menu"
             >
               {mobileOpen ? (
                 <X className="h-5 w-5" />

@@ -64,3 +64,23 @@ export const login = async (req, res) => {
     return res.status(404).json({ error: error });
   }
 };
+
+export const forgotPassword = async(req, res) =>{
+  try {
+    const {email, newPassword} = req.body;
+    if(!email || !newPassword) {
+      return res.status(400).json({error: "invalid email"});
+    }
+    const user = await User.findOne({email:email});
+    if(!user) {
+      return res.status(400).json({error:"there is no user registered with the given email!!"})
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+    return res.status(200).json({message:"password changed successfully", data:user});
+    
+  } catch (error) {
+    res.status(400).json({error:error});
+  }
+}

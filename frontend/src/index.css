@@ -101,9 +101,31 @@
     @apply border-border;
   }
 
+  html {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Roboto", sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  button {
+    outline: none;
+  }
+
+  button:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
   }
 }
 
@@ -120,5 +142,18 @@
   }
   .font-display {
     font-family: "Playfair Display", serif;
+  }
+
+  /* Prevent horizontal overflow */
+  .container {
+    max-width: 100%;
+  }
+
+  /* Fix for images and media */
+  img,
+  video,
+  iframe {
+    max-width: 100%;
+    height: auto;
   }
 }

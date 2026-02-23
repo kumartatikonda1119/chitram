@@ -27,12 +27,51 @@ const SearchPage = () => {
   const [personResults, setPersonResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [sortBy, setSortBy] = useState("popularity_desc");
 
   const searchTypes = [
     { id: "movie", label: "Movie" },
     { id: "person", label: "Person" },
     { id: "genre", label: "Genre" },
   ];
+
+  const sortOptions = [
+    { value: "popularity_desc", label: "Popularity ↓" },
+    { value: "rating_desc", label: "Rating ↓" },
+    { value: "date_desc", label: "Newest" },
+    { value: "date_asc", label: "Oldest" },
+    { value: "title_asc", label: "Title A-Z" },
+  ];
+
+  const sortResults = (items) => {
+    const sorted = [...items];
+
+    switch (sortBy) {
+      case "rating_desc":
+        return sorted.sort(
+          (a, b) => (b.vote_average || 0) - (a.vote_average || 0),
+        );
+      case "date_desc":
+        return sorted.sort(
+          (a, b) =>
+            new Date(b.release_date || 0).getTime() -
+            new Date(a.release_date || 0).getTime(),
+        );
+      case "date_asc":
+        return sorted.sort(
+          (a, b) =>
+            new Date(a.release_date || 0).getTime() -
+            new Date(b.release_date || 0).getTime(),
+        );
+      case "title_asc":
+        return sorted.sort((a, b) =>
+          (a.title || a.name || "").localeCompare(b.title || b.name || ""),
+        );
+      case "popularity_desc":
+      default:
+        return sorted.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    }
+  };
 
   const handleSearch = async () => {
     if (!query && !selectedGenre) return;
@@ -82,7 +121,7 @@ const SearchPage = () => {
   }, [selectedGenre, selectedLang]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden w-full">
       <Navbar />
       <div className="pt-24 pb-16">
         <div className="container mx-auto px-4 md:px-6">
@@ -249,11 +288,34 @@ const SearchPage = () => {
           )}
 
           {!loading && results.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-              {results.map((movie, i) => (
-                <MovieCard key={movie.id} movie={movie} index={i} />
-              ))}
-            </div>
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm text-muted-foreground">
+                  {results.length} results found
+                </p>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">
+                    Sort by:
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {sortResults(results).map((movie, i) => (
+                  <MovieCard key={movie.id} movie={movie} index={i} />
+                ))}
+              </div>
+            </>
           )}
 
           {!loading && personResults.length > 0 && (
@@ -318,7 +380,6 @@ const SearchPage = () => {
 
           {!loading && !hasSearched && (
             <div className="text-center py-20">
-              <p className="text-4xl mb-4">🔍</p>
               <p className="text-muted-foreground text-lg">
                 Start searching for movies or people, or browse by genre.
               </p>
