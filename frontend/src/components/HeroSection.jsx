@@ -49,7 +49,7 @@ const HeroSection = () => {
           >
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">
-              If you love cinema, this is your temple
+              Professional insights for cinema enthusiasts
             </span>
           </motion.div>
 

@@ -927,10 +927,9 @@ const MovieDetail = () => {
                     <h2 className="text-2xl font-display font-bold text-foreground mb-8">
                       Related Videos
                     </h2>
-                    <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+                    <div className="w-full max-w-5xl mx-auto aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
                       <iframe
-                        width="100%"
-                        height="100%"
+                        className="w-full h-full"
                         src={trailerUrl}
                         title={`${movie.title} Video`}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

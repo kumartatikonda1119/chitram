@@ -16,6 +16,7 @@ import MovieDetail from "./pages/MovieDetail";
 import ActorDetail from "./pages/ActorDetail";
 import Recommend from "./pages/Recommend";
 import Profile from "./pages/Profile";
+import ListDetail from "./pages/ListDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const AppRoutes = () => {
         <Route path="/person/:id" element={<ActorDetail />} />
         <Route path="/recommend" element={<Recommend />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/list/:id" element={<ListDetail />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

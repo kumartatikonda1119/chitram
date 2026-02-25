@@ -59,8 +59,11 @@ export const listAPI = {
   create: (name) => api.post("/lists", { name }),
   getAll: () => api.get("/lists"),
   getMovies: (listId) => api.get(`/lists/${listId}`),
+  getPublic: (listId) => api.get(`/lists/public/${listId}`),
   addMovie: (listId, movieId) =>
     api.post(`/lists/${listId}/movie`, { movieId }),
+  setVisibility: (listId, isPublic) =>
+    api.patch(`/lists/${listId}/visibility`, { isPublic }),
   delete: (listId) => api.delete(`/lists/${listId}`),
 };
 

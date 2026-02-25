@@ -3,13 +3,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Heart, List, Share2, Plus, Trash2, User, Loader2 } from "lucide-react";
+import {
+  Heart,
+  List,
+  Share2,
+  Plus,
+  Trash2,
+  User,
+  Loader2,
+  Lock,
+  Globe,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const APP_BASE_URL = (
+  import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin
+).replace(/\/$/, "");
 
 const Profile = () => {
   const { user } = useAuth();
@@ -195,13 +208,60 @@ const Profile = () => {
     const moviesList =
       list.movies?.map((m, i) => `${i + 1}) ${m.title}`).join("\n") ||
       "No movies yet";
-    const text = `These are my 🎬 ${list.name} on Chitram:\n${moviesList}\n\nDo you want to make your own list? Visit https://chitram.onrender.com`;
+    const listUrl = `${APP_BASE_URL}/list/${list._id}`;
+    const text = list.isPublic
+      ? `These are my 🎬 ${list.name} on Chitram:\n${moviesList}\n\nOpen my public list: ${listUrl}\n\nDo you want to make your own list? Visit ${APP_BASE_URL}`
+      : `These are my 🎬 ${list.name} on Chitram:\n${moviesList}\n\nDo you want to make your own list? Visit ${APP_BASE_URL}`;
 
     if (navigator.share) {
-      navigator.share({ title: list.name, text });
+      navigator.share({
+        title: list.name,
+        text,
+        url: list.isPublic ? listUrl : undefined,
+      });
     } else {
       navigator.clipboard.writeText(text);
       toast.success("List copied to clipboard!");
+    }
+  };
+
+  const handleToggleVisibility = async (list) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        `${API_BASE_URL}/lists/${list._id}/visibility`,
+        { isPublic: !list.isPublic },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      setLists((prev) =>
+        prev.map((item) =>
+          item._id === list._id
+            ? { ...item, isPublic: response.data.isPublic }
+            : item,
+        ),
+      );
+
+      toast.success(
+        response.data.isPublic
+          ? "List is now public and shareable"
+          : "List is now private",
+      );
+    } catch (error) {
+      console.error("Error updating list visibility:", error);
+      const status = error?.response?.status;
+      const message = error?.response?.data?.error;
+      if (status === 404) {
+        toast.error(
+          "Visibility route not found. Restart backend and try again.",
+        );
+      } else {
+        toast.error(message || "Failed to update list visibility");
+      }
     }
   };
 
@@ -219,7 +279,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
       <Navbar />
-      <div className="pt-24 pb-16">
+      <div className="pt-24 pb-24 md:pb-16">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -361,14 +421,36 @@ const Profile = () => {
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold text-foreground">
+                          <Link
+                            to={`/list/${list._id}`}
+                            className="text-lg font-semibold text-foreground hover:text-primary transition-colors"
+                          >
                             {list.name}
-                          </h3>
+                          </Link>
                           <p className="text-xs text-muted-foreground mt-1">
                             {list.movies?.length || 0} movies
                           </p>
                         </div>
                         <div className="flex gap-2">
+                          <button
+                            onClick={() => handleToggleVisibility(list)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              list.isPublic
+                                ? "text-primary hover:bg-primary/10"
+                                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                            }`}
+                            title={
+                              list.isPublic
+                                ? "Public list (click to make private)"
+                                : "Private list (click to make public)"
+                            }
+                          >
+                            {list.isPublic ? (
+                              <Globe className="h-4 w-4" />
+                            ) : (
+                              <Lock className="h-4 w-4" />
+                            )}
+                          </button>
                           <button
                             onClick={() => handleShareList(list)}
                             className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
@@ -385,6 +467,11 @@ const Profile = () => {
                           </button>
                         </div>
                       </div>
+                      <p className="text-xs mb-4 text-muted-foreground">
+                        {list.isPublic
+                          ? "Visibility: Public (share link enabled)"
+                          : "Visibility: Private (text-only share)"}
+                      </p>
                       {list.movies && list.movies.length > 0 ? (
                         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                           {list.movies.map((movie) => (
