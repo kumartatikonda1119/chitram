@@ -208,7 +208,7 @@ const Profile = () => {
     const moviesList =
       list.movies?.map((m, i) => `${i + 1}) ${m.title}`).join("\n") ||
       "No movies yet";
-    const listUrl = `${APP_BASE_URL}/list/${list._id}`;
+    const listUrl = `${APP_BASE_URL}/#/list/${list._id}`;
     const text = list.isPublic
       ? `These are my 🎬 ${list.name} on Chitram:\n${moviesList}\n\nOpen my public list: ${listUrl}\n\nDo you want to make your own list? Visit ${APP_BASE_URL}`
       : `These are my 🎬 ${list.name} on Chitram:\n${moviesList}\n\nDo you want to make your own list? Visit ${APP_BASE_URL}`;
