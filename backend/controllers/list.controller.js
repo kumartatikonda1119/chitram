@@ -81,46 +81,14 @@ export const getListMovies = async (req, res) => {
   }
 };
 
-export const updateListVisibility = async (req, res) => {
-  try {
-    const { listId } = req.params;
-    const { isPublic } = req.body;
-    const userId = req.user.userId;
-
-    if (typeof isPublic !== "boolean") {
-      return res.status(400).json({ error: "isPublic must be a boolean" });
-    }
-
-    const list = await List.findOneAndUpdate(
-      { _id: listId, userId },
-      { isPublic },
-      { new: true },
-    );
-
-    if (!list) {
-      return res
-        .status(403)
-        .json({ error: "Not authorized or list not found" });
-    }
-
-    res.json(list);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to update list visibility" });
-  }
-};
-
 export const getPublicListDetails = async (req, res) => {
   try {
     const { listId } = req.params;
 
-    const list = await List.findById(listId).select("_id name isPublic");
+    const list = await List.findById(listId).select("_id name");
 
     if (!list) {
       return res.status(404).json({ error: "List not found" });
-    }
-
-    if (!list.isPublic) {
-      return res.status(403).json({ error: "This list is private" });
     }
 
     const movies = await ListItem.find({ listId: list._id }).select("movieId");
