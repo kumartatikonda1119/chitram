@@ -169,3 +169,77 @@ export const searchMovieById = async (req, res) => {
     res.status(404).json({ error: error });
   }
 };
+
+export const searchSeriesByName = async (req, res) => {
+  try {
+    const seriesName = req.query.name || req.query.seriesName;
+
+    if (!seriesName) {
+      return res
+        .status(400)
+        .json({ error: "Please provide series name in query param: name" });
+    }
+
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/tv?api_key=${process.env.API_KEY}&query=${encodeURIComponent(seriesName)}`,
+    );
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "TMDB API error" });
+    }
+
+    const data = await response.json();
+    return res.status(200).json({ data: data.results || [] });
+  } catch (error) {
+    res.status(500).json({ error: "Series search failed" });
+  }
+};
+
+export const searchSeriesById = async (req, res) => {
+  try {
+    const id = req.params.id || req.query.id;
+
+    if (!id) {
+      return res
+        .status(400)
+        .json({ error: "Please provide series id in path or query param: id" });
+    }
+
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${id}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,images,similar,recommendations`,
+    );
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "TMDB API error" });
+    }
+
+    const data = await response.json();
+    return res.status(200).json({ data: data });
+  } catch (error) {
+    res.status(500).json({ error: "Series fetch by id failed" });
+  }
+};
+export const searchSeason = async (req, res) => {
+  try {
+    const { seasonNo, seriesId } = req.params;
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNo}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,images,similar,recommendations`,
+    );
+    const data = await response.json();
+    return res.status(200).json({ data: data });
+  } catch (error) {
+    res.status(404).json({ error: "error in searching season" });
+  }
+};
+export const searchEpisode = async (req, res) => {
+  try {
+    const { seasonNo, seriesId, episodeId } = req.params;
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNo}/episode/${episodeId}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,images,similar,recommendations`,
+    );
+    const data = await response.json();
+    return res.status(200).json({ data: data });
+  } catch (error) {
+    res.status(404).json({ error: "error in searching season" });
+  }
+};

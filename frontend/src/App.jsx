@@ -17,6 +17,9 @@ import ActorDetail from "./pages/ActorDetail";
 import Recommend from "./pages/Recommend";
 import Profile from "./pages/Profile";
 import ListDetail from "./pages/ListDetail";
+import SeriesDetail from "./pages/SeriesDetail";
+import SeasonDetail from "./pages/SeasonDetail";
+import EpisodeDetail from "./pages/EpisodeDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +51,15 @@ const AppRoutes = () => {
         <Route path="/recommend" element={<Recommend />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/list/:id" element={<ListDetail />} />
+        <Route path="/series/:id" element={<SeriesDetail />} />
+        <Route
+          path="/series/:seriesId/season/:seasonNo"
+          element={<SeasonDetail />}
+        />
+        <Route
+          path="/series/:seriesId/season/:seasonNo/episode/:episodeNo"
+          element={<EpisodeDetail />}
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </HashRouter>

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
+import SeriesCard from "@/components/SeriesCard";
 import { GENRES, LANGUAGES } from "@/lib/types";
 import {
   Search as SearchIcon,
@@ -25,12 +26,14 @@ const SearchPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [results, setResults] = useState([]);
   const [personResults, setPersonResults] = useState([]);
+  const [seriesResults, setSeriesResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [sortBy, setSortBy] = useState("popularity_desc");
 
   const searchTypes = [
     { id: "movie", label: "Movie" },
+    { id: "tv", label: "TV Shows" },
     { id: "person", label: "Person" },
     { id: "genre", label: "Genre" },
   ];
@@ -54,14 +57,14 @@ const SearchPage = () => {
       case "date_desc":
         return sorted.sort(
           (a, b) =>
-            new Date(b.release_date || 0).getTime() -
-            new Date(a.release_date || 0).getTime(),
+            new Date(b.release_date || b.first_air_date || 0).getTime() -
+            new Date(a.release_date || a.first_air_date || 0).getTime(),
         );
       case "date_asc":
         return sorted.sort(
           (a, b) =>
-            new Date(a.release_date || 0).getTime() -
-            new Date(b.release_date || 0).getTime(),
+            new Date(a.release_date || a.first_air_date || 0).getTime() -
+            new Date(b.release_date || b.first_air_date || 0).getTime(),
         );
       case "title_asc":
         return sorted.sort((a, b) =>
@@ -89,12 +92,24 @@ const SearchPage = () => {
         });
         setResults(response.data.data || []);
         setPersonResults([]);
+        setSeriesResults([]);
+      } else if (searchType === "tv") {
+        const params = { name: query };
+        if (selectedLang) params.lang = selectedLang;
+
+        const response = await axios.get(`${API_BASE_URL}/searchSeriesByName`, {
+          params,
+        });
+        setSeriesResults(response.data.data || []);
+        setResults([]);
+        setPersonResults([]);
       } else if (searchType === "person") {
         const response = await axios.get(`${API_BASE_URL}/searchPerson`, {
           params: { name: query },
         });
         setPersonResults(response.data.data || []);
         setResults([]);
+        setSeriesResults([]);
       } else if (searchType === "genre") {
         const params = { id: selectedGenre };
         if (selectedLang) params.lang = selectedLang;
@@ -134,7 +149,7 @@ const SearchPage = () => {
               Search <span className="text-primary">Cinema</span>
             </h1>
             <p className="text-muted-foreground mt-3">
-              Find movies by name or explore by genre.
+              Find movies, TV shows by name or explore by genre.
             </p>
           </motion.div>
 
@@ -159,9 +174,11 @@ const SearchPage = () => {
                   placeholder={
                     searchType === "movie"
                       ? "Search for a movie..."
-                      : searchType === "person"
-                        ? "Search for a person..."
-                        : "Select a genre below..."
+                      : searchType === "tv"
+                        ? "Search for a TV show..."
+                        : searchType === "person"
+                          ? "Search for a person..."
+                          : "Select a genre below..."
                   }
                   className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-2xl glass text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 />
@@ -196,6 +213,7 @@ const SearchPage = () => {
                   setSearchType(type.id);
                   setResults([]);
                   setPersonResults([]);
+                  setSeriesResults([]);
                   setHasSearched(false);
                 }}
                 className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${searchType === type.id ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
@@ -318,6 +336,37 @@ const SearchPage = () => {
             </>
           )}
 
+          {!loading && seriesResults.length > 0 && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm text-muted-foreground">
+                  {seriesResults.length} results found
+                </p>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">
+                    Sort by:
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {sortResults(seriesResults).map((series, i) => (
+                  <SeriesCard key={series.id} series={series} index={i} />
+                ))}
+              </div>
+            </>
+          )}
+
           {!loading && personResults.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
               {personResults.map((person, i) => (
@@ -369,7 +418,8 @@ const SearchPage = () => {
           {!loading &&
             hasSearched &&
             results.length === 0 &&
-            personResults.length === 0 && (
+            personResults.length === 0 &&
+            seriesResults.length === 0 && (
               <div className="text-center py-20">
                 <p className="text-4xl mb-4">🎬</p>
                 <p className="text-muted-foreground text-lg">
@@ -381,7 +431,8 @@ const SearchPage = () => {
           {!loading && !hasSearched && (
             <div className="text-center py-20">
               <p className="text-muted-foreground text-lg">
-                Start searching for movies or people, or browse by genre.
+                Start searching for movies, TV shows or people, or browse by
+                genre.
               </p>
             </div>
           )}
