@@ -48,6 +48,17 @@ const SeriesDetail = () => {
   const [crewData, setCrewData] = useState({});
   const [trailerUrl, setTrailerUrl] = useState(null);
 
+  const handleAuthError = (error) => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      toast.error("Session expired. Please login again.");
+      navigate("/login");
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
     fetchSeriesDetails();
   }, [id]);
@@ -131,6 +142,7 @@ const SeriesDetail = () => {
     if (!user) return;
     try {
       const token = localStorage.getItem("token");
+      if (!token) return;
       const response = await axios.get(
         `${API_BASE_URL}/favourite/getFavorites`,
         { headers: { Authorization: `Bearer ${token}` } },
@@ -138,6 +150,7 @@ const SeriesDetail = () => {
       const favorites = response.data.favorites;
       setIsFavorite(favorites.some((fav) => fav.movieId === parseInt(id)));
     } catch (error) {
+      if (handleAuthError(error)) return;
       console.error("Error checking favorites:", error);
     }
   };
@@ -146,11 +159,13 @@ const SeriesDetail = () => {
     if (!user) return;
     try {
       const token = localStorage.getItem("token");
+      if (!token) return;
       const response = await axios.get(`${API_BASE_URL}/lists`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLists(response.data || []);
     } catch (error) {
+      if (handleAuthError(error)) return;
       console.error("Error fetching lists:", error);
     }
   };
@@ -164,15 +179,20 @@ const SeriesDetail = () => {
     setLoadingFavorite(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to add favorites");
+        navigate("/login");
+        return;
+      }
       if (isFavorite) {
-        await axios.delete(`${API_BASE_URL}/favourite/remove/${id}`, {
+        await axios.delete(`${API_BASE_URL}/favourite/removeFavorite/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setIsFavorite(false);
         toast.success("Removed from favorites");
       } else {
         await axios.post(
-          `${API_BASE_URL}/favourite/add`,
+          `${API_BASE_URL}/favourite/addFavorite`,
           { movieId: parseInt(id) },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -180,6 +200,7 @@ const SeriesDetail = () => {
         toast.success("Added to favorites!");
       }
     } catch (error) {
+      if (handleAuthError(error)) return;
       console.error("Error toggling favorite:", error);
       toast.error(error.response?.data?.error || "Failed to update favorites");
     } finally {
@@ -204,6 +225,11 @@ const SeriesDetail = () => {
     }
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to create lists");
+        navigate("/login");
+        return;
+      }
       await axios.post(
         `${API_BASE_URL}/lists/${selectedList._id}/movie`,
         { movieId: parseInt(id) },
@@ -213,6 +239,7 @@ const SeriesDetail = () => {
       setShowListModal(false);
       setSelectedList(null);
     } catch (error) {
+      if (handleAuthError(error)) return;
       console.error("Error adding to list:", error);
       toast.error(error.response?.data?.error || "Failed to add to list");
     }
@@ -230,6 +257,11 @@ const SeriesDetail = () => {
     }
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to create lists");
+        navigate("/login");
+        return;
+      }
       const response = await axios.post(
         `${API_BASE_URL}/lists`,
         { name: newListName.trim() },
@@ -239,6 +271,7 @@ const SeriesDetail = () => {
       setNewListName("");
       toast.success("List created!");
     } catch (error) {
+      if (handleAuthError(error)) return;
       console.error("Error creating list:", error);
       toast.error(error.response?.data?.error || "Failed to create list");
     }
