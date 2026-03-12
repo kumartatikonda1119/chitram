@@ -33,7 +33,7 @@ const SearchPage = () => {
 
   const searchTypes = [
     { id: "movie", label: "Movie" },
-    { id: "tv", label: "TV Shows" },
+    { id: "tv", label: "TV Shows/ Web Series" },
     { id: "person", label: "Person" },
     { id: "genre", label: "Genre" },
   ];

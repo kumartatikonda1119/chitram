@@ -3,7 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Heart, List, Share2, Plus, Trash2, User, Loader2 } from "lucide-react";
+import {
+  Heart,
+  List,
+  Share2,
+  Plus,
+  Trash2,
+  User,
+  Loader2,
+  LogOut,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
@@ -15,7 +24,7 @@ const APP_BASE_URL = (
 ).replace(/\/$/, "");
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
   const [favoriteMovies, setFavoriteMovies] = useState([]);
@@ -212,6 +221,11 @@ const Profile = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -243,6 +257,13 @@ const Profile = () => {
               <p className="text-muted-foreground text-sm mt-1">
                 {favoriteMovies.length} favorites • {lists.length} lists
               </p>
+              <button
+                onClick={handleLogout}
+                className="md:hidden mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-muted transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
             </div>
           </motion.div>
 
