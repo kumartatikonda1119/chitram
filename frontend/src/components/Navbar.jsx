@@ -19,6 +19,8 @@ const navItems = [
   { label: "Recommend", path: "/recommend" },
 ];
 
+const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
 const Navbar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -45,7 +47,7 @@ const Navbar = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 glass w-full">
         <div className="container mx-auto px-4 md:px-6 max-w-full">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/" onClick={scrollTop} className="flex items-center gap-2 group">
               <Film className="h-7 w-7 text-primary transition-transform group-hover:rotate-12" />
               <span className="text-2xl font-display font-bold text-primary">
                 Chitram
@@ -57,6 +59,7 @@ const Navbar = () => {
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={scrollTop}
                   className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
                     location.pathname === item.path
                       ? "text-primary"
@@ -86,6 +89,7 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/profile"
+                    onClick={scrollTop}
                     className="hidden md:inline-flex p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
                     title={user.username}
                   >
@@ -102,6 +106,7 @@ const Navbar = () => {
               ) : (
                 <Link
                   to="/login"
+                  onClick={scrollTop}
                   className="hidden md:inline-flex px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity shadow-md shadow-primary/20"
                 >
                   Sign In
@@ -121,6 +126,7 @@ const Navbar = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={scrollTop}
                 className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
                   active
                     ? "text-primary"

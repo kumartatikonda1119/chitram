@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
+import ScrollToTopButton from "./components/ScrollToTopButton";
 import axios from "axios";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -24,6 +25,14 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const ScrollRestorer = () => {
+  const location = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.pathname, location.hash]);
+  return null;
+};
+
 const AppRoutes = () => {
   const { loading } = useAuth();
 
@@ -40,6 +49,8 @@ const AppRoutes = () => {
 
   return (
     <HashRouter>
+      <ScrollRestorer />
+      <ScrollToTopButton />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
