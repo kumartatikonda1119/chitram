@@ -33,6 +33,7 @@ const Profile = () => {
   const [newListName, setNewListName] = useState("");
   const [activeTab, setActiveTab] = useState("favorites");
   const [loading, setLoading] = useState(true);
+  const [removingFavoriteId, setRemovingFavoriteId] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -186,8 +187,6 @@ const Profile = () => {
   };
 
   const handleDeleteList = async (listId) => {
-    if (!confirm("Are you sure you want to delete this list?")) return;
-
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`${API_BASE_URL}/lists/${listId}`, {
@@ -200,6 +199,35 @@ const Profile = () => {
     } catch (error) {
       console.error("Error deleting list:", error);
       toast.error("Failed to delete list");
+    }
+  };
+
+  const handleRemoveFavorite = async (movieId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Please login to manage favorites");
+        return;
+      }
+
+      setRemovingFavoriteId(movieId);
+      await axios.delete(
+        `${API_BASE_URL}/favourite/removeFavorite/${movieId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      setFavorites((prev) => prev.filter((fav) => fav.movieId !== movieId));
+      setFavoriteMovies((prev) => prev.filter((movie) => movie.id !== movieId));
+      toast.success("Removed from favorites");
+    } catch (error) {
+      console.error("Error removing favorite:", error);
+      toast.error(error.response?.data?.error || "Failed to remove favorite");
+    } finally {
+      setRemovingFavoriteId(null);
     }
   };
 
@@ -296,7 +324,7 @@ const Profile = () => {
                       transition={{ delay: i * 0.05 }}
                     >
                       <Link to={`/movie/${movie.id}`} className="group block">
-                        <div className="aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
+                        <div className="relative aspect-[2/3] rounded-xl bg-card border border-border overflow-hidden group-hover:border-primary/30 transition-all">
                           {movie.poster_path ? (
                             <img
                               src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
@@ -308,6 +336,19 @@ const Profile = () => {
                               <span className="text-4xl">🎬</span>
                             </div>
                           )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleRemoveFavorite(movie.id);
+                            }}
+                            disabled={removingFavoriteId === movie.id}
+                            className="absolute top-2 right-2 p-2 rounded-full bg-background/85 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-60"
+                            title="Remove from favorites"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                         <p className="mt-2 text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
                           {movie.title}
@@ -400,6 +441,13 @@ const Profile = () => {
                           </p>
                         </div>
                         <div className="flex gap-2">
+                          <Link
+                            to={`/list/${list._id}`}
+                            className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:bg-muted transition-colors"
+                            title="View full list"
+                          >
+                            View
+                          </Link>
                           <button
                             onClick={() => handleShareList(list)}
                             className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"

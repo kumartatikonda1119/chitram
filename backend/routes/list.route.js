@@ -7,6 +7,7 @@ import {
   getListMovies,
   deleteList,
   getPublicListDetails,
+  removeMovieFromList,
 } from "../controllers/list.controller.js";
 
 const router = express.Router();
@@ -17,5 +18,5 @@ router.post("/", protect, createList);
 router.post("/:listId/movie", protect, addMovieToList);
 router.get("/:listId", protect, getListMovies);
 router.delete("/:listId", protect, deleteList);
-
+router.delete("/:listId/movie/:movieId", protect, removeMovieFromList);
 export default router;
