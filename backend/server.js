@@ -23,14 +23,26 @@ const normalizeOrigin = (value) => {
   }
 };
 
-const allowedOrigins = [
-  ...(FRONTEND_URL
-    ? FRONTEND_URL.split(",")
-        .map((url) => normalizeOrigin(url))
-        .filter(Boolean)
-    : []),
-  normalizeOrigin(RENDER_EXTERNAL_URL),
-].filter(Boolean);
+const defaultAllowedOrigins = [
+  "https://chitram.dev",
+  "https://chitram.onrender.com",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+
+const envAllowedOrigins = FRONTEND_URL
+  ? FRONTEND_URL.split(",")
+      .map((url) => normalizeOrigin(url))
+      .filter(Boolean)
+  : [];
+
+const allowedOrigins = Array.from(
+  new Set(
+    [...defaultAllowedOrigins, ...envAllowedOrigins, RENDER_EXTERNAL_URL]
+      .map((url) => normalizeOrigin(url))
+      .filter(Boolean),
+  ),
+);
 
 try {
   await mongoose.connect(MONGODB_URI);
