@@ -332,6 +332,7 @@ const SeriesDetail = () => {
       count++;
     if (series.seasons?.length > 0) count++;
     if (trailerUrl) count++;
+    if (series.images?.backdrops?.some((b) => b?.file_path)) count++;
     return count;
   };
 
@@ -854,14 +855,16 @@ const SeriesDetail = () => {
                 className="w-full"
               >
                 <TabsList
-                  className={`grid w-full max-w-lg ${
-                    getVisibleTabsCount() === 4
-                      ? "grid-cols-4"
-                      : getVisibleTabsCount() === 3
-                        ? "grid-cols-3"
-                        : getVisibleTabsCount() === 2
-                          ? "grid-cols-2"
-                          : "grid-cols-1"
+                  className={`grid w-full max-w-2xl ${
+                    getVisibleTabsCount() === 5
+                      ? "grid-cols-5"
+                      : getVisibleTabsCount() === 4
+                        ? "grid-cols-4"
+                        : getVisibleTabsCount() === 3
+                          ? "grid-cols-3"
+                          : getVisibleTabsCount() === 2
+                            ? "grid-cols-2"
+                            : "grid-cols-1"
                   }`}
                 >
                   {series.credits?.cast?.length > 0 && (
@@ -874,6 +877,9 @@ const SeriesDetail = () => {
                   )}
                   {series.seasons?.length > 0 && (
                     <TabsTrigger value="seasons">Seasons</TabsTrigger>
+                  )}
+                  {galleryBackdrops.length > 0 && (
+                    <TabsTrigger value="gallery">Gallery</TabsTrigger>
                   )}
                   {trailerUrl && (
                     <TabsTrigger value="trailer">Videos</TabsTrigger>
@@ -1219,6 +1225,74 @@ const SeriesDetail = () => {
                     </div>
                   </TabsContent>
                 )}
+
+                {galleryBackdrops.length > 0 && (
+                  <TabsContent value="gallery" className="mt-8">
+                    <h2 className="text-2xl font-display font-bold text-foreground mb-6">
+                      Visual Gallery
+                    </h2>
+
+                    <div className="relative h-[36vh] sm:h-[44vh] lg:h-[52vh] max-h-[620px] min-h-[220px] rounded-2xl overflow-hidden border border-border bg-card">
+                      <img
+                        src={`https://image.tmdb.org/t/p/original${activeBackdrop.file_path}`}
+                        alt={`${series.name} backdrop ${activeBackdropIndex + 1}`}
+                        className="w-full h-full object-contain bg-black/30"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                      {galleryBackdrops.length > 1 && (
+                        <>
+                          <button
+                            onClick={() =>
+                              setActiveBackdropIndex((prev) =>
+                                prev === 0
+                                  ? galleryBackdrops.length - 1
+                                  : prev - 1,
+                              )
+                            }
+                            className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+                            aria-label="Previous image"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setActiveBackdropIndex((prev) =>
+                                prev === galleryBackdrops.length - 1
+                                  ? 0
+                                  : prev + 1,
+                              )
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+                            aria-label="Next image"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+                      {galleryBackdrops.map((image, index) => (
+                        <button
+                          key={`${image.file_path}-${index}`}
+                          onClick={() => setActiveBackdropIndex(index)}
+                          className={`relative w-32 md:w-40 aspect-video rounded-xl overflow-hidden border transition-all shrink-0 ${
+                            index === activeBackdropIndex
+                              ? "border-primary ring-2 ring-primary/40"
+                              : "border-border"
+                          }`}
+                        >
+                          <img
+                            src={`https://image.tmdb.org/t/p/w500${image.file_path}`}
+                            alt={`Backdrop ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </TabsContent>
+                )}
               </Tabs>
             </div>
           </section>
@@ -1282,72 +1356,6 @@ const SeriesDetail = () => {
                     ) : null,
                   )}
                 </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {galleryBackdrops.length > 0 && (
-          <section className="pb-16">
-            <div className="container mx-auto px-4 md:px-6">
-              <h2 className="text-2xl font-display font-bold text-foreground mb-6">
-                Visual Gallery
-              </h2>
-
-              <div className="relative aspect-[16/8] rounded-2xl overflow-hidden border border-border bg-card">
-                <img
-                  src={`https://image.tmdb.org/t/p/original${activeBackdrop.file_path}`}
-                  alt={`${series.name} backdrop ${activeBackdropIndex + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
-                {galleryBackdrops.length > 1 && (
-                  <>
-                    <button
-                      onClick={() =>
-                        setActiveBackdropIndex((prev) =>
-                          prev === 0 ? galleryBackdrops.length - 1 : prev - 1,
-                        )
-                      }
-                      className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() =>
-                        setActiveBackdropIndex((prev) =>
-                          prev === galleryBackdrops.length - 1 ? 0 : prev + 1,
-                        )
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-                {galleryBackdrops.map((image, index) => (
-                  <button
-                    key={`${image.file_path}-${index}`}
-                    onClick={() => setActiveBackdropIndex(index)}
-                    className={`relative w-32 md:w-40 aspect-video rounded-xl overflow-hidden border transition-all shrink-0 ${
-                      index === activeBackdropIndex
-                        ? "border-primary ring-2 ring-primary/40"
-                        : "border-border"
-                    }`}
-                  >
-                    <img
-                      src={`https://image.tmdb.org/t/p/w500${image.file_path}`}
-                      alt={`Backdrop ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
               </div>
             </div>
           </section>
