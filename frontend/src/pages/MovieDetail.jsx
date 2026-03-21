@@ -447,7 +447,7 @@ const MovieDetail = () => {
               <img
                 src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
                 alt={movie.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-[center_22%] md:object-[center_18%]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/30" />
             </>
