@@ -11,6 +11,8 @@ import {
   searchSeriesById,
   searchSeason,
   searchEpisode,
+  getOTTProviders,
+  getSeriesOTTProviders,
 } from "../controllers/search.controller.js";
 const router = express.Router();
 router.get("/exploreMovies", exploreMovies);
@@ -29,4 +31,6 @@ router.get(
   "/searchSeries/:seriesId/season/:seasonNo/episode/:episodeId",
   searchEpisode,
 );
+router.get("/getOTTProvider/:id", getOTTProviders);
+router.get("/getSeriesOTTProvider/:id", getSeriesOTTProviders);
 export default router;

@@ -159,7 +159,7 @@ export const searchMovieById = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await fetch(
-      `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,similar`,
+      `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,similar,images`,
     );
 
     const data = await response.json();
@@ -241,5 +241,58 @@ export const searchEpisode = async (req, res) => {
     return res.status(200).json({ data: data });
   } catch (error) {
     res.status(404).json({ error: "error in searching season" });
+  }
+};
+export const getOTTProviders = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await fetch(
+      `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${process.env.API_KEY}`,
+    );
+
+    const data = await response.json();
+
+    const indiaProviders = data.results?.IN;
+
+    if (!indiaProviders) {
+      return res.status(200).json({
+        message: "No OTT providers available in India",
+        data: null,
+      });
+    }
+
+    res.status(200).json({
+      indiaProviders,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getSeriesOTTProviders = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${id}/watch/providers?api_key=${process.env.API_KEY}`,
+    );
+
+    const data = await response.json();
+
+    const indiaProviders = data.results?.IN;
+
+    if (!indiaProviders) {
+      return res.status(200).json({
+        message: "No OTT providers available in India",
+        data: null,
+      });
+    }
+
+    res.status(200).json({
+      indiaProviders,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
