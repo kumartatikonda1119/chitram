@@ -648,27 +648,55 @@ const SeriesDetail = () => {
                 {series.overview}
               </p>
 
-              {ottProviders?.flatrate?.length > 0 && (
+              {ottProviders && (
                 <div className="p-4 rounded-xl bg-card border border-border">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-                    Streaming In India
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {ottProviders.flatrate.slice(0, 5).map((provider) => (
-                      <span
-                        key={provider.provider_id}
-                        className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium"
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Streaming In India
+                    </p>
+                    {ottProviders.link && (
+                      <a
+                        href={ottProviders.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                       >
-                        {provider.logo_path && (
-                          <img
-                            src={`https://image.tmdb.org/t/p/w45${provider.logo_path}`}
-                            alt={provider.provider_name}
-                            className="w-4 h-4 rounded-sm object-cover"
-                          />
-                        )}
-                        {provider.provider_name}
-                      </span>
-                    ))}
+                        View All
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { key: "flatrate", label: "Stream" },
+                      { key: "rent", label: "Rent" },
+                      { key: "buy", label: "Buy" },
+                    ].map(({ key, label }) =>
+                      ottProviders[key]?.length > 0 ? (
+                        <div key={key}>
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                            {label}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {ottProviders[key].slice(0, 6).map((provider) => (
+                              <span
+                                key={`${key}-${provider.provider_id}`}
+                                className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium"
+                              >
+                                {provider.logo_path && (
+                                  <img
+                                    src={`https://image.tmdb.org/t/p/w45${provider.logo_path}`}
+                                    alt={provider.provider_name}
+                                    className="w-4 h-4 rounded-sm object-cover"
+                                  />
+                                )}
+                                {provider.provider_name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null,
+                    )}
                   </div>
                 </div>
               )}
@@ -1294,69 +1322,6 @@ const SeriesDetail = () => {
                   </TabsContent>
                 )}
               </Tabs>
-            </div>
-          </section>
-        )}
-
-        {ottProviders && (
-          <section className="pb-6">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="p-5 md:p-6 rounded-2xl bg-card border border-border">
-                <div className="flex items-start justify-between gap-4 mb-5">
-                  <div>
-                    <h2 className="text-2xl font-display font-bold text-foreground">
-                      Where To Watch (India)
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Availability from TMDB watch providers.
-                    </p>
-                  </div>
-                  {ottProviders.link && (
-                    <a
-                      href={ottProviders.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-muted transition-colors"
-                    >
-                      View All
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-
-                <div className="space-y-5">
-                  {[
-                    { key: "flatrate", label: "Stream" },
-                    { key: "rent", label: "Rent" },
-                    { key: "buy", label: "Buy" },
-                  ].map(({ key, label }) =>
-                    ottProviders[key]?.length > 0 ? (
-                      <div key={key}>
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                          {label}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {ottProviders[key].map((provider) => (
-                            <span
-                              key={`${key}-${provider.provider_id}`}
-                              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm"
-                            >
-                              {provider.logo_path && (
-                                <img
-                                  src={`https://image.tmdb.org/t/p/w45${provider.logo_path}`}
-                                  alt={provider.provider_name}
-                                  className="w-5 h-5 rounded-sm object-cover"
-                                />
-                              )}
-                              {provider.provider_name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null,
-                  )}
-                </div>
-              </div>
             </div>
           </section>
         )}
