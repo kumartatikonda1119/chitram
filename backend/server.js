@@ -24,6 +24,7 @@ const normalizeOrigin = (value) => {
 };
 
 const defaultAllowedOrigins = [
+  "https://www.chitram.dev",
   "https://chitram.dev",
   "https://chitram.onrender.com",
   "http://localhost:8080",
