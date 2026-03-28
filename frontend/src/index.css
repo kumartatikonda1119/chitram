@@ -151,8 +151,7 @@
 
   /* Fix for images and media */
   img,
-  video,
-  iframe {
+  video {
     max-width: 100%;
     height: auto;
   }
