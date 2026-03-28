@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
 import ScrollToTopButton from "./components/ScrollToTopButton";
@@ -11,6 +12,7 @@ import axios from "axios";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import SearchPage from "./pages/Search";
 import MovieDetail from "./pages/MovieDetail";
@@ -55,6 +57,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
@@ -78,8 +81,17 @@ const AppRoutes = () => {
 };
 
 const App = () => {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+  const hasGoogleClientId = Boolean(googleClientId);
+
   // Wake up backend on app load (Render free tier sleeps after inactivity)
   useEffect(() => {
+    if (!hasGoogleClientId) {
+      console.warn(
+        "Google OAuth is disabled: VITE_GOOGLE_CLIENT_ID is missing in current Vite mode.",
+      );
+    }
+
     const wakeBackend = async () => {
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -96,7 +108,7 @@ const App = () => {
     wakeBackend();
   }, []);
 
-  return (
+  const appContent = (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
@@ -108,6 +120,16 @@ const App = () => {
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
+  );
+
+  if (!hasGoogleClientId) {
+    return appContent;
+  }
+
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      {appContent}
+    </GoogleOAuthProvider>
   );
 };
 

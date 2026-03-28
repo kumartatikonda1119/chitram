@@ -2,15 +2,18 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Film, Mail, Lock, ArrowRight } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const Login = () => {
+  const hasGoogleAuth = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,6 +32,24 @@ const Login = () => {
       navigate("/profile");
     } else {
       toast.error(result.error || "Login failed");
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      toast.error("Google login failed. Please try again.");
+      return;
+    }
+
+    setGoogleLoading(true);
+    const result = await loginWithGoogle(credentialResponse.credential);
+    setGoogleLoading(false);
+
+    if (result.success) {
+      toast.success("Welcome to Chitram!");
+      navigate("/profile");
+    } else {
+      toast.error(result.error || "Google login failed");
     }
   };
 
@@ -98,6 +119,47 @@ const Login = () => {
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
+
+          {hasGoogleAuth && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-3 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                {googleLoading ? (
+                  <div className="text-sm text-muted-foreground">
+                    Signing in with Google...
+                  </div>
+                ) : (
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => toast.error("Google login failed")}
+                    theme="filled_black"
+                    shape="pill"
+                    text="continue_with"
+                  />
+                )}
+              </div>
+            </>
+          )}
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Forgot your password?{" "}
+            <Link
+              to="/forgot-password"
+              className="text-primary hover:underline font-medium"
+            >
+              Reset with OTP
+            </Link>
+          </p>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don't have an account?{" "}
