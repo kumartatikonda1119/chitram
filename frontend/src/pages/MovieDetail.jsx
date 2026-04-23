@@ -117,7 +117,6 @@ const MovieDetail = () => {
 
         if (trailerFound) {
           setTrailerUrl(`https://www.youtube.com/embed/${trailerFound.key}`);
-          console.log("Trailer found:", trailerFound);
         } else {
           console.log(
             "No YouTube videos found. Available videos:",

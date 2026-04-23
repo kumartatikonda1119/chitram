@@ -83,8 +83,6 @@ const AppRoutes = () => {
 const App = () => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
   const hasGoogleClientId = Boolean(googleClientId);
-
-  // Wake up backend on app load (Render free tier sleeps after inactivity)
   useEffect(() => {
     if (!hasGoogleClientId) {
       console.warn(
@@ -96,7 +94,6 @@ const App = () => {
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         if (apiBaseUrl && !apiBaseUrl.includes("localhost")) {
-          // Extract base URL and ping health endpoint
           const baseUrl = apiBaseUrl.replace("/api", "");
           await axios.get(`${baseUrl}/health`, { timeout: 10000 });
           console.log("Backend wakened successfully");
