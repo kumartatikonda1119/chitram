@@ -372,8 +372,8 @@ export const requestPasswordResetOtp = async (req, res) => {
       devOtp: SHOULD_EXPOSE_DEV_OTP ? otp : undefined,
       emailFallback: emailMeta.fallbackLogged,
     });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to send reset OTP" });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to send reset OTP", err });
   }
 };
 
