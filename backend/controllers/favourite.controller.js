@@ -1,4 +1,7 @@
 import Favorite from "../models/favourite.model.js";
+import { getCache, setCache, delCache } from "../services/redis.service.js";
+
+const FAVOURITES_TTL = 300; // 5 minutes
 
 export const addFavorite = async (req, res) => {
   try {
@@ -13,6 +16,9 @@ export const addFavorite = async (req, res) => {
       userId,
       movieId,
     });
+
+    // Invalidate cache so next read fetches fresh data
+    await delCache(`user:${userId}:favourites`);
 
     res.status(201).json({
       message: "Movie added to favorites",
@@ -35,6 +41,9 @@ export const removeFavorite = async (req, res) => {
       movieId,
     });
 
+    // Invalidate cache
+    await delCache(`user:${userId}:favourites`);
+
     res.json({ message: "Removed from favorites" });
   } catch (error) {
     res.status(500).json({ error: "Failed to remove favorite" });
@@ -43,8 +52,21 @@ export const removeFavorite = async (req, res) => {
 export const getFavorites = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const cacheKey = `user:${userId}:favourites`;
+
+    // Check cache first
+    const cached = await getCache(cacheKey);
+    if (cached !== null) {
+      return res.json(cached);
+    }
+
     const favorites = await Favorite.find({ userId });
-    res.json({ favorites });
+    const response = { favorites };
+
+    // Cache for next time
+    await setCache(cacheKey, response, FAVOURITES_TTL);
+
+    res.json(response);
   } catch (error) {
     console.error("Error in getFavorites:", error);
     res.status(500).json({ error: "Failed to fetch favorites" });

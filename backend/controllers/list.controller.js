@@ -1,5 +1,9 @@
 import ListItem from "../models/listItem.model.js";
 import List from "../models/list.model.js";
+import { getCache, setCache, delCache } from "../services/redis.service.js";
+
+const LISTS_TTL = 300; // 5 minutes
+const PUBLIC_LIST_TTL = 600; // 10 minutes
 
 export const createList = async (req, res) => {
   try {
@@ -15,6 +19,9 @@ export const createList = async (req, res) => {
       name,
     });
 
+    // Invalidate user's lists cache
+    await delCache(`user:${userId}:lists`);
+
     res.status(201).json(list);
   } catch (error) {
     res.status(500).json({ error: "Failed to create list" });
@@ -24,7 +31,16 @@ export const createList = async (req, res) => {
 export const getUserLists = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const cacheKey = `user:${userId}:lists`;
+
+    const cached = await getCache(cacheKey);
+    if (cached !== null) {
+      return res.json(cached);
+    }
+
     const lists = await List.find({ userId });
+
+    await setCache(cacheKey, lists, LISTS_TTL);
 
     res.json(lists);
   } catch (error) {
@@ -54,6 +70,9 @@ export const addMovieToList = async (req, res) => {
       movieId,
     });
 
+    // Invalidate list caches
+    await delCache(`list:${listId}:movies`, `list:public:${listId}`);
+
     res.status(201).json(item);
   } catch (error) {
     if (error.code === 11000) {
@@ -73,7 +92,15 @@ export const getListMovies = async (req, res) => {
       return res.status(403).json({ error: "Not authorized" });
     }
 
+    const cacheKey = `list:${listId}:movies`;
+    const cached = await getCache(cacheKey);
+    if (cached !== null) {
+      return res.json(cached);
+    }
+
     const movies = await ListItem.find({ listId });
+
+    await setCache(cacheKey, movies, LISTS_TTL);
 
     res.json(movies);
   } catch (error) {
@@ -85,6 +112,12 @@ export const getPublicListDetails = async (req, res) => {
   try {
     const { listId } = req.params;
 
+    const cacheKey = `list:public:${listId}`;
+    const cached = await getCache(cacheKey);
+    if (cached !== null) {
+      return res.json(cached);
+    }
+
     const list = await List.findById(listId).select("_id name");
 
     if (!list) {
@@ -93,10 +126,11 @@ export const getPublicListDetails = async (req, res) => {
 
     const movies = await ListItem.find({ listId: list._id }).select("movieId");
 
-    res.json({
-      list,
-      movies,
-    });
+    const response = { list, movies };
+
+    await setCache(cacheKey, response, PUBLIC_LIST_TTL);
+
+    res.json(response);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch public list" });
   }
@@ -118,6 +152,13 @@ export const deleteList = async (req, res) => {
     await ListItem.deleteMany({ listId });
 
     await List.deleteOne({ _id: listId });
+
+    // Invalidate all related caches
+    await delCache(
+      `user:${userId}:lists`,
+      `list:${listId}:movies`,
+      `list:public:${listId}`,
+    );
 
     res.json({ message: "List deleted successfully" });
   } catch (error) {
@@ -144,6 +185,9 @@ export const removeMovieFromList = async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ error: "Movie not found in this list" });
     }
+
+    // Invalidate list caches
+    await delCache(`list:${listId}:movies`, `list:public:${listId}`);
 
     res.json({ message: "Movie removed from list" });
   } catch (error) {

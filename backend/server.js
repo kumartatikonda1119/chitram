@@ -11,6 +11,7 @@ import {
   getMailConfigurationStatus,
   verifyMailConnection,
 } from "./services/mail.service.js";
+import { initRedis, isRedisReady } from "./services/redis.service.js";
 const app = express();
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -55,6 +56,8 @@ try {
 } catch (error) {
   console.error("Database connection error:", error.message);
 }
+
+initRedis();
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -89,6 +92,7 @@ app.get("/health", (req, res) => {
       database:
         mongoose.connection.readyState === 1 ? "connected" : "disconnected",
       email: mail.configured ? "configured" : "not_configured",
+      redis: isRedisReady() ? "connected" : "disconnected",
     },
   });
 });

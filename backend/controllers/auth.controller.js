@@ -5,6 +5,7 @@ import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
 import { sendOtpEmail } from "../services/mail.service.js";
+import { getCooldownTTL, setCooldown } from "../services/redis.service.js";
 
 const OTP_EXPIRY_MINUTES = 10;
 const OTP_RESEND_COOLDOWN_SECONDS = 60;
@@ -29,6 +30,11 @@ const sanitizeUser = (user) => ({
 const buildOtpCode = () => `${randomInt(100000, 1000000)}`;
 
 const getOtpRetryAfter = async ({ email, purpose }) => {
+  // Try Redis first (fast path)
+  const redisTTL = await getCooldownTTL(`otp:cooldown:${email}:${purpose}`);
+  if (redisTTL > 0) return redisTTL;
+
+  // Fallback to MongoDB if Redis is unavailable
   const latestOtp = await Otp.findOne({ email, purpose }).sort({ createdAt: -1 });
   if (!latestOtp) return 0;
 
@@ -42,6 +48,12 @@ const saveOtp = async ({ email, purpose, code, payload = {} }) => {
 
   await Otp.deleteMany({ email, purpose });
   await Otp.create({ email, purpose, codeHash, payload, expiresAt });
+
+  // Set cooldown in Redis so subsequent checks skip MongoDB
+  await setCooldown(
+    `otp:cooldown:${email}:${purpose}`,
+    OTP_RESEND_COOLDOWN_SECONDS,
+  );
 };
 
 const verifyOtpCode = async ({ email, purpose, otp }) => {
