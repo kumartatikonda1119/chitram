@@ -61,11 +61,18 @@ const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <Link to="/" className="flex items-center justify-center gap-2 mb-10">
+        <Link to="/" className="flex items-center justify-center gap-2 mb-6">
           <Film className="h-8 w-8 text-primary" />
           <span className="text-3xl font-display font-bold text-primary">
             Chitram
           </span>
+        </Link>
+
+        <Link
+          to="/"
+          className="mb-10 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/70"
+        >
+          Back to Home
         </Link>
 
         <div className="p-8 rounded-2xl bg-card border border-border shadow-lg">

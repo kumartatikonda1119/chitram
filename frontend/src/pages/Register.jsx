@@ -60,8 +60,8 @@ const Register = () => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
 
-    if (!otp || otp.length < 4) {
-      toast.error("Enter a valid OTP");
+    if (!/^\d{6}$/.test(otp)) {
+      toast.error("Enter the 6-digit OTP");
       return;
     }
 

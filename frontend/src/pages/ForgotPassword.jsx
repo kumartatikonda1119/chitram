@@ -47,7 +47,7 @@ const ForgotPassword = () => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
-    if (!otp || !newPassword) {
+    if (!/^\d{6}$/.test(otp) || !newPassword) {
       toast.error("Please fill in all fields");
       return;
     }

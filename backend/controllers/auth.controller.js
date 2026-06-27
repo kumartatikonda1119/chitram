@@ -1,11 +1,14 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { randomInt } from "node:crypto";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
 import { sendOtpEmail } from "../services/mail.service.js";
 
 const OTP_EXPIRY_MINUTES = 10;
+const OTP_RESEND_COOLDOWN_SECONDS = 60;
+const OTP_MAX_ATTEMPTS = 5;
 const SHOULD_EXPOSE_DEV_OTP = process.env.SHOW_DEV_OTP === "true";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -23,7 +26,15 @@ const sanitizeUser = (user) => ({
   authProviders: user.authProviders,
 });
 
-const buildOtpCode = () => `${Math.floor(100000 + Math.random() * 900000)}`;
+const buildOtpCode = () => `${randomInt(100000, 1000000)}`;
+
+const getOtpRetryAfter = async ({ email, purpose }) => {
+  const latestOtp = await Otp.findOne({ email, purpose }).sort({ createdAt: -1 });
+  if (!latestOtp) return 0;
+
+  const ageSeconds = Math.floor((Date.now() - latestOtp.createdAt.getTime()) / 1000);
+  return Math.max(0, OTP_RESEND_COOLDOWN_SECONDS - ageSeconds);
+};
 
 const saveOtp = async ({ email, purpose, code, payload = {} }) => {
   const codeHash = await bcrypt.hash(code, 10);
@@ -49,6 +60,15 @@ const verifyOtpCode = async ({ email, purpose, otp }) => {
 
   const isMatch = await bcrypt.compare(otp, otpRecord.codeHash);
   if (!isMatch) {
+    otpRecord.attempts += 1;
+    if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
+      await Otp.deleteOne({ _id: otpRecord._id });
+      return {
+        valid: false,
+        error: "Too many invalid attempts. Request a new OTP.",
+      };
+    }
+    await otpRecord.save();
     return { valid: false, error: "Invalid OTP" };
   }
 
@@ -56,6 +76,28 @@ const verifyOtpCode = async ({ email, purpose, otp }) => {
 };
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
+
+const sendSavedOtp = async ({ email, purpose, otp, payload = {} }) => {
+  await saveOtp({ email, purpose, code: otp, payload });
+
+  try {
+    return await sendOtpEmail({ to: email, otp, purpose });
+  } catch (error) {
+    await Otp.deleteMany({ email, purpose });
+    throw error;
+  }
+};
+
+const handleOtpError = (res, error, fallbackMessage) => {
+  if (String(error.code || "").startsWith("EMAIL_")) {
+    return res.status(503).json({
+      error: "We could not send the email right now. Please try again shortly.",
+    });
+  }
+
+  console.error(fallbackMessage, error);
+  return res.status(500).json({ error: fallbackMessage });
+};
 
 export const register = async (req, res) => {
   try {
@@ -91,23 +133,28 @@ export const register = async (req, res) => {
       }
     }
 
+    const retryAfter = await getOtpRetryAfter({
+      email: normalizedEmail,
+      purpose: "verify_email",
+    });
+    if (retryAfter > 0) {
+      res.set("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        error: `Please wait ${retryAfter} seconds before requesting another OTP.`,
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const otp = buildOtpCode();
-    await saveOtp({
+    const emailMeta = await sendSavedOtp({
       email: normalizedEmail,
       purpose: "verify_email",
-      code: otp,
+      otp,
       payload: {
         username: username.trim(),
         password: hashedPassword,
       },
-    });
-
-    const emailMeta = await sendOtpEmail({
-      to: normalizedEmail,
-      otp,
-      purpose: "verify_email",
     });
 
     return res.status(200).json({
@@ -117,7 +164,7 @@ export const register = async (req, res) => {
       emailFallback: emailMeta.fallbackLogged,
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to register" });
+    return handleOtpError(res, error, "Failed to register");
   }
 };
 
@@ -126,7 +173,7 @@ export const verifyRegisterOtp = async (req, res) => {
     const { email, otp } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    if (!normalizedEmail || !otp) {
+    if (!normalizedEmail || !/^\d{6}$/.test(String(otp))) {
       return res.status(400).json({ error: "Email and OTP are required" });
     }
 
@@ -204,18 +251,23 @@ export const resendRegisterOtp = async (req, res) => {
       });
     }
 
-    const otp = buildOtpCode();
-    await saveOtp({
+    const retryAfter = await getOtpRetryAfter({
       email: normalizedEmail,
       purpose: "verify_email",
-      code: otp,
-      payload: existingOtp.payload,
     });
+    if (retryAfter > 0) {
+      res.set("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        error: `Please wait ${retryAfter} seconds before requesting another OTP.`,
+      });
+    }
 
-    const emailMeta = await sendOtpEmail({
-      to: normalizedEmail,
-      otp,
+    const otp = buildOtpCode();
+    const emailMeta = await sendSavedOtp({
+      email: normalizedEmail,
       purpose: "verify_email",
+      otp,
+      payload: existingOtp.payload,
     });
 
     return res.status(200).json({
@@ -224,7 +276,7 @@ export const resendRegisterOtp = async (req, res) => {
       emailFallback: emailMeta.fallbackLogged,
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to resend OTP" });
+    return handleOtpError(res, error, "Failed to resend OTP");
   }
 };
 
@@ -354,17 +406,22 @@ export const requestPasswordResetOtp = async (req, res) => {
       });
     }
 
-    const otp = buildOtpCode();
-    await saveOtp({
+    const retryAfter = await getOtpRetryAfter({
       email: normalizedEmail,
       purpose: "reset_password",
-      code: otp,
     });
+    if (retryAfter > 0) {
+      res.set("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        error: `Please wait ${retryAfter} seconds before requesting another OTP.`,
+      });
+    }
 
-    const emailMeta = await sendOtpEmail({
-      to: normalizedEmail,
-      otp,
+    const otp = buildOtpCode();
+    const emailMeta = await sendSavedOtp({
+      email: normalizedEmail,
       purpose: "reset_password",
+      otp,
     });
 
     return res.status(200).json({
@@ -372,8 +429,8 @@ export const requestPasswordResetOtp = async (req, res) => {
       devOtp: SHOULD_EXPOSE_DEV_OTP ? otp : undefined,
       emailFallback: emailMeta.fallbackLogged,
     });
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to send reset OTP", err });
+  } catch (error) {
+    return handleOtpError(res, error, "Failed to send reset OTP");
   }
 };
 
@@ -382,7 +439,7 @@ export const resetPasswordWithOtp = async (req, res) => {
     const { email, otp, newPassword } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    if (!normalizedEmail || !otp || !newPassword) {
+    if (!normalizedEmail || !/^\d{6}$/.test(String(otp)) || !newPassword) {
       return res
         .status(400)
         .json({ error: "Email, OTP and new password are required" });

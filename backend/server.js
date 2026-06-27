@@ -7,6 +7,10 @@ import { protect } from "./middleware/auth.js";
 import favoriteRoutes from "./routes/favourite.route.js";
 import listRoutes from "./routes/list.route.js";
 import cors from "cors";
+import {
+  getMailConfigurationStatus,
+  verifyMailConnection,
+} from "./services/mail.service.js";
 const app = express();
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -77,9 +81,31 @@ app.get("/profile", protect, (req, res) => {
   res.json({ message: "Protected route accessed", user: req.user });
 });
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "Chitram backend is running" });
+  const mail = getMailConfigurationStatus();
+  res.json({
+    status: "ok",
+    message: "Chitram backend is running",
+    services: {
+      database:
+        mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+      email: mail.configured ? "configured" : "not_configured",
+    },
+  });
 });
 
 app.listen(port, () => {
   console.log(`server is running on port ${port}`);
+
+  verifyMailConnection().then((mail) => {
+    if (mail.verified) {
+      console.log(`Email transport verified (${mail.provider})`);
+      return;
+    }
+
+    if (!mail.configured) {
+      console.warn(
+        `Email transport is not configured: ${mail.missing.join(", ")}`,
+      );
+    }
+  });
 });

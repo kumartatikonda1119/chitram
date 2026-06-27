@@ -200,6 +200,13 @@ JWT_SECRET=your_jwt_secret
 API_KEY=your_tmdb_api_key
 FRONTEND_URL=http://localhost:5173,https://your-frontend-domain.com
 RENDER_EXTERNAL_URL=https://your-backend-domain.onrender.com
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_USER=resend
+SMTP_PASS=re_your_resend_api_key
+SMTP_FROM="Chitram <no-reply@your-verified-domain.com>"
+SHOW_DEV_OTP=false
+ALLOW_DEV_OTP_LOG=false
 ```
 
 ### Frontend (`frontend/.env.production` and/or `frontend/.env`)
@@ -211,47 +218,64 @@ VITE_PUBLIC_APP_URL=https://your-frontend-domain.com
 
 > `VITE_PUBLIC_APP_URL` is used while generating share links for public lists.
 
+Copy `backend/.env.example` and `frontend/.env.example` as starting points. Never
+commit real `.env` files.
+
+### Resend email setup
+
+1. Add your sending domain in Resend.
+2. Add every DKIM, SPF/MX, and SPF/TXT record shown by Resend to your DNS provider.
+3. Wait until the domain status is **Verified**.
+4. Use an address on that verified domain in `SMTP_FROM`.
+5. Run `npm run verify:email --prefix backend` to verify SMTP authentication.
+
+SMTP authentication alone does not verify the sender domain. Resend rejects OTP
+emails until the domain's DNS records are verified.
+
 ---
 
 ## Run Locally
 
-### 1) Clone repository
+### Docker (recommended, one command)
+
+Docker Desktop must be running. Configure `backend/.env`, then copy the root
+`.env.example` to `.env` and set the Google OAuth web client ID used by Vite.
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8080`. The API is exposed on `http://localhost:5000`.
+Stop everything with `docker compose down`.
+
+### Native development (hot reload)
+
+#### 1) Clone repository
 
 ```bash
 git clone <your-repo-url>
 cd Chitram
 ```
 
-### 2) Install dependencies
+#### 2) Install dependencies
 
 ```bash
-cd backend
 npm install
-
-cd ../frontend
-npm install
+npm run install:apps
 ```
 
-### 3) Configure environment variables
+#### 3) Configure environment variables
 
 - Add backend `.env` with MongoDB, JWT, and TMDB key
 - Add frontend `.env` (or `.env.production`) with backend API URL and public app URL
 
-### 4) Start backend
+#### 4) Start both applications
 
 ```bash
-cd backend
 npm run dev
 ```
 
-### 5) Start frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-Frontend default: `http://localhost:5173`
+Frontend default: `http://localhost:8080`
 
 ---
 
@@ -262,8 +286,12 @@ Base URL: `/api`
 ### Auth
 
 - `POST /auth/register`
+- `POST /auth/verify-register-otp`
+- `POST /auth/resend-register-otp`
 - `POST /auth/login`
-- `PATCH /auth/forgotPassword`
+- `POST /auth/google`
+- `POST /auth/forgot-password/request-otp`
+- `POST /auth/forgot-password/reset`
 
 ### Favorites (Protected)
 

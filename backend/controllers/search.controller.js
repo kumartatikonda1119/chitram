@@ -30,7 +30,8 @@ export const searchMovie = async (req, res) => {
 
     return res.status(200).json({ data: results });
   } catch (error) {
-    return res.status(500).json({ error: "Search failed" });
+    
+    return res.status(500).json({ err: "Search failed", msg:error });
   }
 };
 
@@ -150,8 +151,9 @@ export const exploreMovies = async (req, res) => {
       totalPages: data.total_pages || 1,
       totalResults: data.total_results || 0,
     });
-  } catch (error) {
+  } catch (err) {
     return res.status(500).json({ error: "Explore fetch failed" });
+    console.log(err, "hello i am kumar")
   }
 };
 
