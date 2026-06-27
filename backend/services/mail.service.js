@@ -1,7 +1,8 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 let transporter;
-
+let resendClient;
 const getMailConfig = () => {
   const host = process.env.SMTP_HOST?.trim();
   const port = Number(process.env.SMTP_PORT || 587);
@@ -58,13 +59,18 @@ const createTransporter = () => {
 };
 
 export const verifyMailConnection = async () => {
-  const mailer = createTransporter();
   const status = getMailConfigurationStatus();
 
-  if (!mailer) {
+  if (!status.configured) {
     return { ...status, verified: false };
   }
 
+  if (status.provider === "resend") {
+    // Resend SDK does not require explicit verification connection like SMTP
+    return { ...status, verified: true };
+  }
+
+  const mailer = createTransporter();
   try {
     await mailer.verify();
     return { ...status, verified: true };
@@ -81,7 +87,6 @@ export const verifyMailConnection = async () => {
 };
 
 export const sendOtpEmail = async ({ to, otp, purpose }) => {
-  const mailer = createTransporter();
   const status = getMailConfigurationStatus();
   const appName = "Chitram";
   const subject =
@@ -101,7 +106,7 @@ export const sendOtpEmail = async ({ to, otp, purpose }) => {
     </div>
   `;
 
-  if (!mailer) {
+  if (!status.configured) {
     const allowDevLog =
       process.env.NODE_ENV !== "production" &&
       process.env.ALLOW_DEV_OTP_LOG === "true";
@@ -119,7 +124,35 @@ export const sendOtpEmail = async ({ to, otp, purpose }) => {
   }
 
   try {
-    const { from } = getMailConfig();
+    const { from, pass } = getMailConfig();
+
+    if (status.provider === "resend") {
+      if (!resendClient) {
+        resendClient = new Resend(pass);
+      }
+
+      const { data, error } = await resendClient.emails.send({
+        from,
+        to,
+        subject,
+        text: `Use ${otp} to ${action}. This code expires in 10 minutes. If you did not request this, ignore this email.`,
+        html,
+      });
+
+      if (error) {
+        const err = new Error(error.message);
+        err.code = "EMAIL_RECIPIENT_REJECTED";
+        throw err;
+      }
+
+      return {
+        sent: true,
+        fallbackLogged: false,
+        messageId: data?.id,
+      };
+    }
+
+    const mailer = createTransporter();
     const info = await mailer.sendMail({
       from,
       to,

@@ -89,13 +89,14 @@ const sendSavedOtp = async ({ email, purpose, otp, payload = {} }) => {
 };
 
 const handleOtpError = (res, error, fallbackMessage) => {
+  console.error(fallbackMessage, error);
+
   if (String(error.code || "").startsWith("EMAIL_")) {
     return res.status(503).json({
       error: "We could not send the email right now. Please try again shortly.",
     });
   }
 
-  console.error(fallbackMessage, error);
   return res.status(500).json({ error: fallbackMessage });
 };
 
