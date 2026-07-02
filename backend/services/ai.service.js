@@ -44,6 +44,9 @@ User: "mind bending movies about dreams"
 User: "allu arjun"
 {"intent":"person","rewrittenQueries":["Allu Arjun"],"searchType":"person"}
 
+User: "godavari gattu paina"
+{"intent":"title","rewrittenQueries":["Godari Gattupaina"],"searchType":"movie"}
+
 User: "godari gattupaina"
 {"intent":"title","rewrittenQueries":["Godari Gattupaina"],"searchType":"movie"}`;
 
@@ -89,7 +92,7 @@ export const rewriteQuery = async (userQuery) => {
 
   // Check Redis cache first
   const hash = crypto.createHash("md5").update(trimmed.toLowerCase()).digest("hex");
-  const cacheKey = `ai:rewrite:${hash}`;
+  const cacheKey = `ai:rewrite:v2:${hash}`;
   const cached = await getCache(cacheKey);
   if (cached) return cached;
 
@@ -100,12 +103,13 @@ export const rewriteQuery = async (userQuery) => {
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.3,
-        maxOutputTokens: 256,
       },
     });
 
     const text = response.text?.trim();
     if (!text) throw new Error("Empty Gemini response");
+
+    console.log("GEMINI RAW TEXT:", text);
 
     // Strip markdown code block fences if present
     const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
