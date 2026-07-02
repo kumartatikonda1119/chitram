@@ -12,6 +12,7 @@ import {
   verifyMailConnection,
 } from "./services/mail.service.js";
 import { initRedis, isRedisReady } from "./services/redis.service.js";
+import { initAI, isAIReady } from "./services/ai.service.js";
 const app = express();
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -58,6 +59,7 @@ try {
 }
 
 initRedis();
+initAI();
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -93,6 +95,7 @@ app.get("/health", (req, res) => {
         mongoose.connection.readyState === 1 ? "connected" : "disconnected",
       email: mail.configured ? "configured" : "not_configured",
       redis: isRedisReady() ? "connected" : "disconnected",
+      ai: isAIReady() ? "enabled" : "disabled",
     },
   });
 });

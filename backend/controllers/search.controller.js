@@ -1,5 +1,117 @@
 import dotenv from "dotenv";
 dotenv.config();
+import { rewriteQuery } from "../services/ai.service.js";
+
+export const smartSearch = async (req, res) => {
+  try {
+    const { query, type } = req.body;
+
+    if (!query || !query.trim()) {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    const aiResult = await rewriteQuery(query.trim());
+    const queries = aiResult.rewrittenQueries || [query.trim()];
+    const searchType = type || aiResult.searchType || "movie";
+
+    // Search TMDB with each rewritten query and merge results
+    const allResults = [];
+    const seenIds = new Set();
+
+    for (const q of queries.slice(0, 3)) {
+      try {
+        let url;
+        if (searchType === "person") {
+          url = `https://api.themoviedb.org/3/search/person?api_key=${process.env.API_KEY}&query=${encodeURIComponent(q)}`;
+        } else if (searchType === "tv") {
+          url = `https://api.themoviedb.org/3/search/tv?api_key=${process.env.API_KEY}&query=${encodeURIComponent(q)}`;
+        } else {
+          url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.API_KEY}&query=${encodeURIComponent(q)}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.results) {
+          for (const item of data.results) {
+            if (!seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              allResults.push(item);
+            }
+          }
+        }
+      } catch {
+        // Skip failed individual queries
+      }
+    }
+
+    return res.status(200).json({
+      data: allResults,
+      ai: {
+        intent: aiResult.intent,
+        rewrittenQueries: queries,
+        searchType,
+      },
+    });
+  } catch (error) {
+    console.error("Smart search failed:", error);
+    return res.status(500).json({ error: "Smart search failed" });
+  }
+};
+
+export const autocomplete = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q || q.length < 2) {
+      return res.status(200).json({ suggestions: [] });
+    }
+
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/multi?api_key=${process.env.API_KEY}&query=${encodeURIComponent(q)}&page=1`,
+    );
+
+    if (!response.ok) {
+      return res.status(200).json({ suggestions: [] });
+    }
+
+    const data = await response.json();
+
+    const suggestions = (data.results || [])
+      .filter((item) => ["movie", "tv", "person"].includes(item.media_type))
+      .slice(0, 8)
+      .map((item) => {
+        if (item.media_type === "person") {
+          return {
+            id: item.id,
+            title: item.name,
+            type: "person",
+            department: item.known_for_department || "Acting",
+            poster: item.profile_path
+              ? `https://image.tmdb.org/t/p/w92${item.profile_path}`
+              : null,
+          };
+        }
+
+        return {
+          id: item.id,
+          title: item.title || item.name,
+          type: item.media_type,
+          year: (item.release_date || item.first_air_date || "").slice(0, 4),
+          poster: item.poster_path
+            ? `https://image.tmdb.org/t/p/w92${item.poster_path}`
+            : null,
+        };
+      });
+
+    return res.status(200).json({ suggestions });
+  } catch (error) {
+    console.error("Autocomplete failed:", error);
+    return res.status(200).json({ suggestions: [] });
+  }
+};
+
+
 export const searchMovie = async (req, res) => {
   try {
     const { movie, lang } = req.query;

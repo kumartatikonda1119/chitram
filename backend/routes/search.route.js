@@ -13,10 +13,20 @@ import {
   searchEpisode,
   getOTTProviders,
   getSeriesOTTProviders,
+  smartSearch,
+  autocomplete,
 } from "../controllers/search.controller.js";
 import { cacheRoute } from "../middleware/cache.js";
 
 const router = express.Router();
+
+// AI-powered endpoints
+router.post("/smart", smartSearch);
+router.get(
+  "/autocomplete",
+  cacheRoute((req) => `autocomplete:${(req.query.q || "").trim().toLowerCase()}`, 1800),
+  autocomplete,
+);
 
 router.get(
   "/exploreMovies",

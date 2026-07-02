@@ -73,10 +73,14 @@ export const listAPI = {
   delete: (listId) => api.delete(`/lists/${listId}`),
 };
 
-// Search APIs (existing TMDB)
+// Search APIs (existing TMDB + AI-powered)
 export const searchAPI = {
   searchMovie: (id) => api.get(`/search/searchMovie/${id}`),
   searchMovies: (query) => api.get(`/search/search?query=${query}`),
+  smartSearch: (query, type) =>
+    api.post("/search/smart", { query, type }),
+  autocomplete: (q) =>
+    api.get(`/search/autocomplete`, { params: { q } }),
 };
 
 export default api;
