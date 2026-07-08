@@ -14,11 +14,14 @@ export const smartSearch = async (req, res) => {
     const queries = aiResult.rewrittenQueries || [query.trim()];
     const searchType = type || aiResult.searchType || "movie";
 
+    console.log("Smart search — AI result:", JSON.stringify(aiResult));
+    console.log("Smart search — using queries:", queries, "type:", searchType);
+
     // Search TMDB with each rewritten query and merge results
     const allResults = [];
     const seenIds = new Set();
 
-    for (const q of queries.slice(0, 3)) {
+    for (const q of queries.slice(0, 5)) {
       try {
         let url;
         if (searchType === "person") {
@@ -29,8 +32,18 @@ export const smartSearch = async (req, res) => {
           url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.API_KEY}&query=${encodeURIComponent(q)}`;
         }
 
+        console.log("Smart search — fetching TMDB for:", q);
         const response = await fetch(url);
+        console.log("Smart search — TMDB status:", response.status, "for query:", q);
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("Smart search — TMDB error body:", errText);
+          continue;
+        }
+
         const data = await response.json();
+        console.log("Smart search — TMDB returned", data.results?.length || 0, "results for:", q);
 
         if (data.results) {
           for (const item of data.results) {
@@ -40,10 +53,12 @@ export const smartSearch = async (req, res) => {
             }
           }
         }
-      } catch {
-        // Skip failed individual queries
+      } catch (err) {
+        console.error("Smart search — fetch error for query:", q, err.message);
       }
     }
+
+    console.log("Smart search — total merged results:", allResults.length);
 
     return res.status(200).json({
       data: allResults,
