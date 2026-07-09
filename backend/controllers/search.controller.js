@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 import { rewriteQuery } from "../services/ai.service.js";
+import { trackInteraction } from "../services/interaction.service.js";
+import jwt from "jsonwebtoken";
 
 export const smartSearch = async (req, res) => {
   try {
@@ -58,7 +60,20 @@ export const smartSearch = async (req, res) => {
       }
     }
 
-    console.log("Smart search — total merged results:", allResults.length);
+    // Track search interaction for authenticated users (fire-and-forget)
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        trackInteraction(decoded.userId, "search", searchType, query.trim(), {
+          query: query.trim(),
+          resultCount: allResults.length,
+        }).catch(() => {});
+      }
+    } catch {
+      // Silent — tracking is best-effort
+    }
 
     return res.status(200).json({
       data: allResults,
@@ -287,15 +302,33 @@ export const exploreMovies = async (req, res) => {
 export const searchMovieById = async (req, res) => {
   try {
     const { id } = req.params;
-    const response = await fetch(
-      `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,similar,images`,
-    );
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const data = await response.json();
+    try {
+      const response = await fetch(
+        `https://api.themoviedb.org/3/movie/${id}?api_key=${process.env.API_KEY}&append_to_response=credits,videos,similar,images`,
+        { signal: controller.signal },
+      );
+      clearTimeout(timer);
 
-    return res.status(200).json({ data: data });
+      if (!response.ok) {
+        return res.status(response.status).json({ error: `TMDB returned ${response.status}` });
+      }
+
+      const data = await response.json();
+      return res.status(200).json({ data: data });
+    } catch (fetchErr) {
+      clearTimeout(timer);
+      if (fetchErr.name === "AbortError") {
+        console.error("searchMovieById: TMDB fetch timed out for ID:", id);
+        return res.status(504).json({ error: "TMDB request timed out" });
+      }
+      throw fetchErr;
+    }
   } catch (error) {
-    res.status(404).json({ error: error });
+    console.error("searchMovieById Error:", error.message);
+    res.status(500).json({ error: error.message || "Failed to fetch movie" });
   }
 };
 
@@ -423,5 +456,56 @@ export const getSeriesOTTProviders = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Proxy endpoint to download TMDB images.
+ * Fetches the image server-side and streams it to the browser
+ * with Content-Disposition: attachment to force a real download.
+ *
+ * GET /api/search/download-image?path=/abc123.jpg&name=MovieName-1
+ */
+export const downloadTmdbImage = async (req, res) => {
+  try {
+    const { path, name } = req.query;
+
+    if (!path) {
+      return res.status(400).json({ error: "Missing 'path' query parameter" });
+    }
+
+    // Sanitize: path must start with / and only contain safe characters
+    if (!/^\/[a-zA-Z0-9_\-]+\.[a-zA-Z]+$/.test(path)) {
+      return res.status(400).json({ error: "Invalid image path" });
+    }
+
+    const imageUrl = `https://image.tmdb.org/t/p/original${path}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(imageUrl, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Failed to fetch image from TMDB" });
+    }
+
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    const ext = contentType.includes("png") ? "png" : "jpg";
+    const filename = `${(name || "chitram-image").replace(/[^a-zA-Z0-9_\- ]/g, "")}.${ext}`;
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    // Stream the response body directly to the client
+    const arrayBuffer = await response.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return res.status(504).json({ error: "Image download timed out" });
+    }
+    console.error("downloadTmdbImage error:", error.message);
+    res.status(500).json({ error: "Failed to download image" });
   }
 };

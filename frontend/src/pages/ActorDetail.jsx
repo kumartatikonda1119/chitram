@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTracker } from "@/hooks/useTracker";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -20,6 +21,7 @@ const API_BASE_URL =
 
 const ActorDetail = () => {
   const { id } = useParams();
+  const { track } = useTracker();
   const [searchParams] = useSearchParams();
   const [person, setPerson] = useState(null);
   const [directorMovies, setDirectorMovies] = useState([]);
@@ -38,6 +40,9 @@ const ActorDetail = () => {
           params: { actorid: id },
         });
         setPerson(personResponse.data.data);
+        track("view_person", "person", id, {
+          name: personResponse.data.data.name,
+        });
 
         if (isDirectorMode) {
           const directorResponse = await axios.get(

@@ -15,6 +15,7 @@ import {
   getSeriesOTTProviders,
   smartSearch,
   autocomplete,
+  downloadTmdbImage,
 } from "../controllers/search.controller.js";
 import { cacheRoute } from "../middleware/cache.js";
 
@@ -136,5 +137,7 @@ router.get(
   cacheRoute((req) => `tmdb:ott:series:${req.params.id}`, 21600),
   getSeriesOTTProviders,
 );
+
+router.get("/download-image", downloadTmdbImage);
 
 export default router;

@@ -1,5 +1,6 @@
 import Favorite from "../models/favourite.model.js";
 import { getCache, setCache, delCache } from "../services/redis.service.js";
+import { trackInteraction } from "../services/interaction.service.js";
 
 const FAVOURITES_TTL = 300; // 5 minutes
 
@@ -19,6 +20,9 @@ export const addFavorite = async (req, res) => {
 
     // Invalidate cache so next read fetches fresh data
     await delCache(`user:${userId}:favourites`);
+
+    // Track interaction (fire-and-forget)
+    trackInteraction(userId, "add_favorite", "movie", movieId).catch(() => {});
 
     res.status(201).json({
       message: "Movie added to favorites",
@@ -43,6 +47,11 @@ export const removeFavorite = async (req, res) => {
 
     // Invalidate cache
     await delCache(`user:${userId}:favourites`);
+
+    // Track interaction (fire-and-forget)
+    trackInteraction(userId, "remove_favorite", "movie", movieId).catch(
+      () => {},
+    );
 
     res.json({ message: "Removed from favorites" });
   } catch (error) {

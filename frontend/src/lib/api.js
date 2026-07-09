@@ -83,4 +83,20 @@ export const searchAPI = {
     api.get(`/search/autocomplete`, { params: { q } }),
 };
 
+// Interaction APIs
+export const interactionAPI = {
+  track: (data) => api.post("/interactions", data),
+  getAll: (params) => api.get("/interactions", { params }),
+  getRecent: (limit) =>
+    api.get("/interactions/recent", { params: { limit } }),
+};
+
+// Recommendation APIs
+export const recommendationAPI = {
+  getPersonalized: (page = 1) =>
+    api.get("/recommendations/personalized", { params: { page } }),
+  getRecentlyViewed: (limit = 20) =>
+    api.get("/recommendations/recently-viewed", { params: { limit } }),
+};
+
 export default api;

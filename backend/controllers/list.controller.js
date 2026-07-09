@@ -1,6 +1,7 @@
 import ListItem from "../models/listItem.model.js";
 import List from "../models/list.model.js";
 import { getCache, setCache, delCache } from "../services/redis.service.js";
+import { trackInteraction } from "../services/interaction.service.js";
 
 const LISTS_TTL = 300; // 5 minutes
 const PUBLIC_LIST_TTL = 600; // 10 minutes
@@ -21,6 +22,11 @@ export const createList = async (req, res) => {
 
     // Invalidate user's lists cache
     await delCache(`user:${userId}:lists`);
+
+    // Track interaction (fire-and-forget)
+    trackInteraction(userId, "create_list", "list", list._id, {
+      listName: name,
+    }).catch(() => {});
 
     res.status(201).json(list);
   } catch (error) {
@@ -72,6 +78,11 @@ export const addMovieToList = async (req, res) => {
 
     // Invalidate list caches
     await delCache(`list:${listId}:movies`, `list:public:${listId}`);
+
+    // Track interaction (fire-and-forget)
+    trackInteraction(userId, "add_to_list", "movie", movieId, {
+      listId,
+    }).catch(() => {});
 
     res.status(201).json(item);
   } catch (error) {

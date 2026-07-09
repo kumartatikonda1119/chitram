@@ -3,14 +3,19 @@ import { Star } from "lucide-react";
 import { GENRES, LANGUAGES } from "@/lib/types";
 import { Link } from "react-router-dom";
 const MovieCard = ({ movie, index = 0 }) => {
-  const genreNames = movie.genre_ids
-    .map((id) => GENRES.find((g) => g.id === id)?.name)
-    .filter(Boolean)
-    .slice(0, 2);
+  // Support both Discover API format (genre_ids: [1,2]) and Details API format (genres: [{id: 1, name: "Action"}])
+  const extractedGenres = movie.genre_ids 
+    ? movie.genre_ids.map((id) => GENRES.find((g) => g.id === id)?.name)
+    : (movie.genres || []).map((g) => g.name);
+
+  const genreNames = extractedGenres.filter(Boolean).slice(0, 2);
 
   const languageName =
     LANGUAGES.find((l) => l.code === movie.original_language?.toLowerCase())
-      ?.name || movie.original_language?.toUpperCase();
+      ?.name || movie.original_language?.toUpperCase() || "Unknown";
+
+  const voteAverage = movie.vote_average ? movie.vote_average.toFixed(1) : "NR";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -36,7 +41,7 @@ const MovieCard = ({ movie, index = 0 }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent z-10" />
             <div className="absolute top-3 right-3 z-20 flex items-center gap-1 px-2 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-bold">
               <Star className="h-3 w-3 fill-current" />
-              {movie.vote_average.toFixed(1)}
+              {voteAverage}
             </div>
           </div>
 

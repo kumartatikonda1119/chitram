@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTracker } from "@/hooks/useTracker";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -24,6 +25,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
@@ -36,6 +38,7 @@ const MovieDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { track } = useTracker();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -79,6 +82,9 @@ const MovieDetail = () => {
         `${API_BASE_URL}/search/searchMovie/${id}`,
       );
       setMovie(response.data.data);
+      track("view_movie", "movie", id, {
+        title: response.data.data.title || response.data.data.original_title,
+      });
       setActiveBackdropIndex(0);
 
       try {
@@ -245,6 +251,7 @@ const MovieDetail = () => {
             },
           },
         );
+        track("add_favorite", "movie", id, { title: movie.title || movie.original_title });
         setIsFavorite(true);
         toast.success("Added to favorites!");
       }
@@ -293,6 +300,7 @@ const MovieDetail = () => {
           },
         },
       );
+      track("add_to_list", "movie", id, { listName: selectedList.name, title: movie.title || movie.original_title });
       toast.success(`Added to "${selectedList.name}"!`);
       setShowListModal(false);
       setSelectedList(null); // Reset selection
@@ -1072,6 +1080,24 @@ const MovieDetail = () => {
                         className="w-full h-full object-contain bg-black/30"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const params = new URLSearchParams({
+                            path: activeBackdrop.file_path,
+                            name: `${movie.title}-backdrop-${activeBackdropIndex + 1}`,
+                          });
+                          window.open(
+                            `${API_BASE_URL}/search/download-image?${params.toString()}`,
+                            "_blank"
+                          );
+                        }}
+                        className="absolute right-3 top-3 p-2.5 rounded-full bg-black/60 text-white hover:bg-primary transition-colors z-10 backdrop-blur-sm"
+                        title="Download high-resolution image"
+                      >
+                        <Download className="h-5 w-5" />
+                      </button>
 
                       {galleryBackdrops.length > 1 && (
                         <>

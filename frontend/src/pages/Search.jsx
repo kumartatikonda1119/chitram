@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTracker } from "@/hooks/useTracker";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -46,6 +47,7 @@ const SearchPage = () => {
   const debounceRef = useRef(null);
   const abortControllerRef = useRef(null);
   const navigate = useNavigate();
+  const { track } = useTracker();
 
   const searchTypes = [
     { id: "movie", label: "Movie" },
@@ -215,9 +217,14 @@ const SearchPage = () => {
         const response = await axios.get(`${API_BASE_URL}/searchMovieByGenre`, {
           params,
         });
-        setResults(response.data.data || []);
+        const genreData = response.data.data || [];
+        setResults(genreData);
         setPersonResults([]);
         setSeriesResults([]);
+        track("search", "genre", selectedGenre, {
+          query: "genre search",
+          resultCount: genreData.length,
+        });
       } else {
         // Use smart search for all text queries
         const response = await axios.post(`${API_BASE_URL}/smart`, {
@@ -243,6 +250,11 @@ const SearchPage = () => {
           setPersonResults([]);
           setSeriesResults([]);
         }
+        track("search", searchType, query, {
+          query,
+          resultCount: data.length,
+          aiSearchType: ai?.searchType,
+        });
       }
     } catch (error) {
       console.error("Search error:", error);

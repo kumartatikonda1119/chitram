@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTracker } from "@/hooks/useTracker";
+import { useAuth } from "@/contexts/AuthContext";
+import { recommendationAPI } from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
@@ -67,6 +70,9 @@ const EXPLORE_SECTIONS = [
   },
 ];
 
+// Sections that should NOT trigger explore_section tracking (they're noise for recommendations)
+const NOISE_SECTIONS = new Set(["recommended", "recently_viewed", "trending"]);
+
 const createInitialState = () => {
   const state = {};
   EXPLORE_SECTIONS.forEach((section) => {
@@ -84,98 +90,164 @@ const createInitialState = () => {
 
 const Explore = () => {
   const [sectionData, setSectionData] = useState(createInitialState);
-  const [featuredSectionId, setFeaturedSectionId] = useState("trending");
-  const featuredLoadRef = useRef(null);
+  const { user } = useAuth();
 
-  const sections = useMemo(() => EXPLORE_SECTIONS, []);
+  // Update initial active tab based on auth state
+  const [featuredSectionId, setFeaturedSectionId] = useState(
+    user ? "recommended" : "trending",
+  );
+  const featuredLoadRef = useRef(null);
+  const { track } = useTracker();
+
+  const sections = useMemo(() => {
+    if (!user) return EXPLORE_SECTIONS;
+
+    return [
+      {
+        id: "recommended",
+        title: "Recommended For You ⭐",
+        subtitle: "Based on what you watch and search",
+        icon: Star,
+      },
+      EXPLORE_SECTIONS.find((s) => s.id === "trending"),
+      {
+        id: "recently_viewed",
+        title: "Recently Viewed",
+        subtitle: "Jump back into what you were exploring",
+        icon: Clock,
+      },
+      ...EXPLORE_SECTIONS.filter((s) => s.id !== "trending"),
+    ];
+  }, [user]);
+
   const featuredSection = useMemo(
     () =>
       sections.find((section) => section.id === featuredSectionId) ||
       sections[0],
     [featuredSectionId, sections],
   );
-  const featuredState = sectionData[featuredSection.id] || {
+
+  const featuredState = sectionData[featuredSection.id] || {};
+  const safeFeaturedState = {
     movies: [],
     page: 0,
     totalPages: 1,
     loading: false,
     loadingMore: false,
     error: null,
+    ...featuredState,
   };
 
-  const fetchSection = async (sectionId, page = 1, append = false) => {
-    setSectionData((prev) => ({
-      ...prev,
-      [sectionId]: {
-        ...prev[sectionId],
-        loading: !append,
-        loadingMore: append,
-        error: null,
-      },
-    }));
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/exploreMovies`, {
-        params: { section: sectionId, page },
-      });
-
-      const payload = response.data || {};
-      const incomingMovies = payload.data || [];
-      const totalPages = payload.totalPages || 1;
-
+  const fetchSection = useCallback(
+    async (sectionId, page = 1, append = false) => {
       setSectionData((prev) => {
-        const oldMovies = append ? prev[sectionId].movies : [];
-        const uniqueById = new Map();
-        [...oldMovies, ...incomingMovies].forEach((movie) => {
-          uniqueById.set(movie.id, movie);
-        });
-
+        const currentSection = prev[sectionId] || {
+          movies: [],
+          page: 0,
+          totalPages: 1,
+        };
         return {
           ...prev,
           [sectionId]: {
-            ...prev[sectionId],
-            movies: Array.from(uniqueById.values()),
-            page,
-            totalPages,
-            loading: false,
-            loadingMore: false,
+            ...currentSection,
+            loading: !append,
+            loadingMore: append,
             error: null,
           },
         };
       });
-    } catch (error) {
-      setSectionData((prev) => ({
-        ...prev,
-        [sectionId]: {
-          ...prev[sectionId],
-          loading: false,
-          loadingMore: false,
-          error: "Failed to load section",
-        },
-      }));
-    }
-  };
+
+      try {
+        let response;
+        if (sectionId === "recommended") {
+          response = await recommendationAPI.getPersonalized(page);
+        } else if (sectionId === "recently_viewed") {
+          response = await recommendationAPI.getRecentlyViewed(20);
+        } else {
+          response = await axios.get(`${API_BASE_URL}/exploreMovies`, {
+            params: { section: sectionId, page },
+          });
+        }
+
+        const payload = response.data || {};
+        const incomingMovies = payload.results || payload.data || [];
+        const totalPages = payload.total_pages || payload.totalPages || 1;
+
+        setSectionData((prev) => {
+          const currentSection = prev[sectionId] || { movies: [] };
+          const oldMovies = append ? currentSection.movies : [];
+          const uniqueById = new Map();
+          [...oldMovies, ...incomingMovies].forEach((movie) => {
+            if (movie && movie.id) {
+              uniqueById.set(movie.id, movie);
+            }
+          });
+
+          return {
+            ...prev,
+            [sectionId]: {
+              ...(prev[sectionId] || {}),
+              movies: Array.from(uniqueById.values()),
+              page,
+              totalPages,
+              loading: false,
+              loadingMore: false,
+              error: null,
+            },
+          };
+        });
+      } catch (error) {
+        console.error(`Failed to fetch section ${sectionId}:`, error.message);
+        setSectionData((prev) => ({
+          ...prev,
+          [sectionId]: {
+            ...(prev[sectionId] || {}),
+            movies: prev[sectionId]?.movies || [],
+            loading: false,
+            loadingMore: false,
+            error: "Failed to load section",
+          },
+        }));
+      }
+    },
+    [],
+  );
 
   const handleViewMore = async (sectionId) => {
     const section = sectionData[sectionId];
-    if (!section || section.loadingMore || section.page >= section.totalPages) {
+    if (
+      !section ||
+      section.loadingMore ||
+      section.page >= section.totalPages
+    ) {
       return;
     }
 
     await fetchSection(sectionId, section.page + 1, true);
   };
 
+  // Only fetch the initial active tab on mount — not all sections
   useEffect(() => {
-    sections.forEach((section) => {
-      fetchSection(section.id, 1, false);
-    });
-  }, [sections]);
+    fetchSection(featuredSectionId, 1, false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch section data when switching tabs (lazy loading)
   useEffect(() => {
-    if (featuredState.movies.length === 0 && !featuredState.loading) {
+    const current = sectionData[featuredSection.id];
+    // Only fetch if this section hasn't been loaded yet
+    if (!current || (current.movies.length === 0 && !current.loading && !current.error)) {
       fetchSection(featuredSection.id, 1, false);
     }
-  }, [featuredSection.id]);
+  }, [featuredSection.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track tab switches — but skip noise sections
+  useEffect(() => {
+    if (!NOISE_SECTIONS.has(featuredSection.id)) {
+      track("explore_section", "genre", featuredSection.id, {
+        section: featuredSection.title,
+      });
+    }
+  }, [featuredSection.id, track]);
 
   useEffect(() => {
     const target = featuredLoadRef.current;
@@ -186,14 +258,14 @@ const Explore = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        const hasMore = featuredState.page < featuredState.totalPages;
+        const hasMore = safeFeaturedState.page < safeFeaturedState.totalPages;
         if (
           entry.isIntersecting &&
           hasMore &&
-          !featuredState.loading &&
-          !featuredState.loadingMore
+          !safeFeaturedState.loading &&
+          !safeFeaturedState.loadingMore
         ) {
-          fetchSection(featuredSection.id, featuredState.page + 1, true);
+          fetchSection(featuredSection.id, safeFeaturedState.page + 1, true);
         }
       },
       { rootMargin: "300px" },
@@ -203,10 +275,10 @@ const Explore = () => {
     return () => observer.disconnect();
   }, [
     featuredSection.id,
-    featuredState.page,
-    featuredState.totalPages,
-    featuredState.loading,
-    featuredState.loadingMore,
+    safeFeaturedState.page,
+    safeFeaturedState.totalPages,
+    safeFeaturedState.loading,
+    safeFeaturedState.loadingMore,
   ]);
 
   return (
@@ -262,24 +334,33 @@ const Explore = () => {
               </div>
             </div>
 
-            {featuredState.loading && (
-              <div className="flex justify-center items-center py-14">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-
-            {!featuredState.loading && featuredState.error && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">{featuredState.error}</p>
-              </div>
-            )}
-
-            {!featuredState.loading &&
-              !featuredState.error &&
-              featuredState.movies.length > 0 && (
+            <AnimatePresence mode="wait">
+              {safeFeaturedState.loading && safeFeaturedState.movies.length === 0 ? (
+                <div className="flex justify-center items-center py-14">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : safeFeaturedState.error &&
+                safeFeaturedState.movies.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center py-20 text-center"
+                >
+                  <p className="text-red-500 mb-4">
+                    {safeFeaturedState.error}
+                  </p>
+                  <button
+                    onClick={() => fetchSection(featuredSection.id)}
+                    className="px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </motion.div>
+              ) : safeFeaturedState.movies.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                    {featuredState.movies.map((movie, index) => (
+                    {safeFeaturedState.movies.map((movie, index) => (
                       <MovieCard
                         key={`featured-${featuredSection.id}-${movie.id}`}
                         movie={movie}
@@ -288,115 +369,24 @@ const Explore = () => {
                     ))}
                   </div>
 
-                  <div
-                    ref={featuredLoadRef}
-                    className="h-10 flex items-center justify-center mt-6"
-                  >
-                    {featuredState.loadingMore && (
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    )}
-                  </div>
-                </>
-              )}
+                  {safeFeaturedState.loadingMore && (
+                    <div className="col-span-full flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  )}
 
-            {!featuredState.loading &&
-              !featuredState.error &&
-              featuredState.movies.length === 0 && (
+                  {safeFeaturedState.page <
+                    safeFeaturedState.totalPages && (
+                    <div ref={featuredLoadRef} className="h-20 w-full" />
+                  )}
+                </>
+              ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">No movies found.</p>
                 </div>
               )}
+            </AnimatePresence>
           </section>
-
-          <div className="mb-6">
-            <h2 className="text-2xl font-display font-bold text-foreground">
-              More To Explore
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Scroll through curated sections and dive deeper.
-            </p>
-          </div>
-
-          <div className="space-y-12">
-            {sections
-              .filter((section) => section.id !== featuredSection.id)
-              .map((section) => {
-                const state = sectionData[section.id];
-                const canViewMore = state.page < state.totalPages;
-
-                return (
-                  <section key={section.id}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h2 className="text-2xl font-display font-bold text-foreground">
-                          {section.title}
-                        </h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {section.subtitle}
-                        </p>
-                      </div>
-                    </div>
-
-                    {state.loading && (
-                      <div className="flex justify-center items-center py-14">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    )}
-
-                    {!state.loading && state.error && (
-                      <div className="text-center py-12">
-                        <p className="text-muted-foreground">{state.error}</p>
-                      </div>
-                    )}
-
-                    {!state.loading &&
-                      !state.error &&
-                      state.movies.length > 0 && (
-                        <>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                            {state.movies.map((movie, index) => (
-                              <MovieCard
-                                key={`${section.id}-${movie.id}`}
-                                movie={movie}
-                                index={index}
-                              />
-                            ))}
-                          </div>
-
-                          {(canViewMore || state.loadingMore) && (
-                            <div className="flex justify-center mt-8">
-                              <button
-                                onClick={() => handleViewMore(section.id)}
-                                disabled={state.loadingMore}
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-70 transition-opacity"
-                              >
-                                {state.loadingMore ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Loading more
-                                  </>
-                                ) : (
-                                  "View More"
-                                )}
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                    {!state.loading &&
-                      !state.error &&
-                      state.movies.length === 0 && (
-                        <div className="text-center py-12">
-                          <p className="text-muted-foreground">
-                            No movies found.
-                          </p>
-                        </div>
-                      )}
-                  </section>
-                );
-              })}
-          </div>
         </div>
       </div>
       <Footer />
