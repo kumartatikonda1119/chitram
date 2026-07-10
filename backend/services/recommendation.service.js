@@ -54,7 +54,8 @@ const fetchTMDBDetails = async (targetType, targetId) => {
 
   if (!data) {
     try {
-      const url = `https://api.themoviedb.org/3/${targetType}/${targetId}?api_key=${TMDB_API_KEY}`;
+      const appendParams = ["movie", "tv"].includes(targetType) ? "&append_to_response=credits" : "";
+      const url = `https://api.themoviedb.org/3/${targetType}/${targetId}?api_key=${TMDB_API_KEY}${appendParams}`;
       const res = await fetchWithTimeout(url);
       if (!res.ok) return null;
       data = await res.json();
@@ -158,11 +159,29 @@ export const buildUserProfile = async (userId) => {
         if (data.genres && Array.isArray(data.genres)) {
           data.genres.forEach((g) => addScore("genres", g.id, score));
         }
+
+        // Actors & Directors (from credits)
+        if (data.credits) {
+          // Add top 5 actors (lead roles matter most)
+          if (data.credits.cast && Array.isArray(data.credits.cast)) {
+            data.credits.cast.slice(0, 5).forEach((actor, idx) => {
+              // Lead actors get higher score, supporting actors get less
+              const actorBonus = idx < 2 ? score : score * 0.5;
+              addScore("people", actor.id, actorBonus);
+            });
+          }
+          // Add director(s)
+          if (data.credits.crew && Array.isArray(data.credits.crew)) {
+            data.credits.crew
+              .filter((member) => member.job === "Director")
+              .forEach((director) => addScore("people", director.id, score * 1.5));
+          }
+        }
       }
     }
   });
 
-  // Extract Top 3 Genres, Top 1 Language, Top 2 People
+  // Extract Top N from scored profile
   const getTop = (obj, limit) => {
     return Object.entries(obj)
       .sort((a, b) => b[1] - a[1])
@@ -171,9 +190,9 @@ export const buildUserProfile = async (userId) => {
   };
 
   const result = {
-    topGenres: getTop(profile.genres, 3),
-    topLanguages: getTop(profile.languages, 1),
-    topPeople: getTop(profile.people, 2),
+    topGenres: getTop(profile.genres, 5),
+    topLanguages: getTop(profile.languages, 3),
+    topPeople: getTop(profile.people, 5),
   };
 
   // Cache the profile for 5 minutes
@@ -183,7 +202,68 @@ export const buildUserProfile = async (userId) => {
 };
 
 /**
+ * Fetch a person's movie filmography directly from TMDB.
+ * This is far more reliable than discover's with_people for regional actors.
+ */
+const fetchPersonFilmography = async (personId) => {
+  const cacheKey = `tmdb:filmography:${personId}`;
+  let data = await getCache(cacheKey);
+
+  if (!data) {
+    try {
+      const url = `https://api.themoviedb.org/3/person/${personId}/movie_credits?api_key=${TMDB_API_KEY}`;
+      const res = await fetchWithTimeout(url);
+      if (!res.ok) return [];
+      data = await res.json();
+      await setCache(cacheKey, data, MOVIE_CACHE_TTL);
+    } catch (err) {
+      console.warn(`[Reco] Filmography fetch failed for person ${personId}:`, err.message);
+      return [];
+    }
+  }
+
+  // Return cast movies (movies they acted in) sorted by popularity
+  const movies = (data.cast || [])
+    .filter((m) => m.poster_path && m.release_date) // must have poster & release date
+    .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+  return movies;
+};
+
+/**
+ * Fetch TMDB's own recommendations for a specific movie.
+ * TMDB does this well — it finds similar movies by analyzing plot, cast, crew.
+ */
+const fetchMovieRecommendations = async (movieId) => {
+  const cacheKey = `tmdb:reco:movie:${movieId}`;
+  let data = await getCache(cacheKey);
+
+  if (!data) {
+    try {
+      const url = `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=${TMDB_API_KEY}`;
+      const res = await fetchWithTimeout(url);
+      if (!res.ok) return [];
+      data = await res.json();
+      await setCache(cacheKey, data, MOVIE_CACHE_TTL);
+    } catch (err) {
+      console.warn(`[Reco] Movie reco fetch failed for ${movieId}:`, err.message);
+      return [];
+    }
+  }
+
+  return data.results || [];
+};
+
+/**
  * Get personalized recommendations for a user.
+ *
+ * Multi-source approach:
+ * 1. Direct actor/director filmography (most reliable for regional cinema)
+ * 2. TMDB's own /recommendations for favorited movies
+ * 3. Discover API with genre + language as supplement
+ * 4. Trending fallback
+ *
+ * All results are merged, deduplicated, and sorted by relevance.
  */
 export const getPersonalizedRecommendations = async (userId, page = 1) => {
   const profile = await buildUserProfile(userId);
@@ -201,83 +281,140 @@ export const getPersonalizedRecommendations = async (userId, page = 1) => {
 
   console.log(`[Reco] User ${userId} profile:`, JSON.stringify(profile));
 
-  // Strategy: Try progressively relaxed queries
-  // 1. Genres + Language + People (strictest)
-  // 2. Genres + Language
-  // 3. Genres only
-  // 4. Trending fallback
+  const allMovies = new Map(); // movieId -> movie data (dedup)
+  const sourceScores = new Map(); // movieId -> bonus score for ranking
 
-  const strategies = [];
+  const addMovies = (movies, source, bonusScore) => {
+    movies.forEach((movie) => {
+      if (!movie.id) return;
+      if (!allMovies.has(movie.id)) {
+        allMovies.set(movie.id, movie);
+        sourceScores.set(movie.id, 0);
+      }
+      sourceScores.set(movie.id, (sourceScores.get(movie.id) || 0) + bonusScore);
+    });
+    console.log(`[Reco] ${source}: added ${movies.length} movies`);
+  };
 
-  // Strategy 1: Full profile
-  if (profile.topGenres.length > 0) {
-    const params = {
-      api_key: TMDB_API_KEY,
-      sort_by: "popularity.desc",
-      page: String(page),
-      "vote_count.gte": "50",
-      with_genres: profile.topGenres.join(","),
-    };
+  // ===== SOURCE 1: Direct filmography of top people (HIGHEST PRIORITY) =====
+  if (profile.topPeople.length > 0) {
+    // Fetch filmographies for up to 5 people in parallel
+    const peopleToFetch = profile.topPeople.slice(0, 5);
+    const filmographies = await Promise.all(
+      peopleToFetch.map((personId) => fetchPersonFilmography(personId))
+    );
 
-    if (profile.topLanguages.length > 0) {
-      params.with_original_language = profile.topLanguages[0];
-    }
-
-    if (profile.topPeople.length > 0) {
-      params.with_people = profile.topPeople.join(",");
-    }
-
-    strategies.push(new URLSearchParams(params));
+    filmographies.forEach((movies, idx) => {
+      // Top 25 movies from each person — enough for deep scrolling
+      addMovies(movies.slice(0, 25), `Filmography:person_${peopleToFetch[idx]}`, 30 - idx * 3);
+    });
   }
 
-  // Strategy 2: Genres + Language (no people)
-  if (profile.topGenres.length > 0 && profile.topLanguages.length > 0) {
-    strategies.push(
-      new URLSearchParams({
+  // ===== SOURCE 2: TMDB recommendations for favorited/listed movies =====
+  const highValueInteractions = await Interaction.find({
+    userId,
+    action: { $in: ["add_favorite", "add_to_list"] },
+    targetType: "movie",
+  })
+    .sort({ createdAt: -1 })
+    .limit(10);
+
+  if (highValueInteractions.length > 0) {
+    // Fetch TMDB recommendations for up to 5 favorited movies
+    const moviesToFetch = highValueInteractions.slice(0, 5);
+    const recoResults = await Promise.all(
+      moviesToFetch.map((interaction) => fetchMovieRecommendations(interaction.targetId))
+    );
+
+    recoResults.forEach((movies, idx) => {
+      addMovies(movies.slice(0, 15), `TMDBReco:movie_${moviesToFetch[idx].targetId}`, 20);
+    });
+  }
+
+  // ===== SOURCE 3: Discover API — one query per top language =====
+  if (profile.topGenres.length > 0) {
+    const genreStr = profile.topGenres.slice(0, 3).join(",");
+    const languagesToQuery = profile.topLanguages.length > 0 ? profile.topLanguages : [null];
+
+    for (const lang of languagesToQuery) {
+      try {
+        const params = new URLSearchParams({
+          api_key: TMDB_API_KEY,
+          sort_by: "popularity.desc",
+          page: String(page),
+          "vote_count.gte": "10",
+          with_genres: genreStr,
+        });
+        if (lang) params.set("with_original_language", lang);
+
+        const url = `https://api.themoviedb.org/3/discover/movie?${params.toString()}`;
+        console.log(`[Reco] Discover (${lang || "global"}): ${url}`);
+        const res = await fetchWithTimeout(url);
+        if (res.ok) {
+          const data = await res.json();
+          // Primary language gets higher score
+          const isMainLang = lang === profile.topLanguages[0];
+          addMovies(data.results || [], `Discover:${lang || "global"}`, isMainLang ? 15 : 8);
+        }
+      } catch (err) {
+        console.warn(`[Reco] Discover (${lang}) failed:`, err.message);
+      }
+    }
+  }
+
+  // ===== SOURCE 4: Global genre-only discover (different languages) =====
+  if (profile.topGenres.length > 0) {
+    try {
+      const params = new URLSearchParams({
         api_key: TMDB_API_KEY,
         sort_by: "popularity.desc",
         page: String(page),
         "vote_count.gte": "50",
-        with_genres: profile.topGenres.join(","),
-        with_original_language: profile.topLanguages[0],
-      })
-    );
-  }
-
-  // Strategy 3: Genres only
-  if (profile.topGenres.length > 0) {
-    strategies.push(
-      new URLSearchParams({
-        api_key: TMDB_API_KEY,
-        sort_by: "popularity.desc",
-        page: String(page),
-        "vote_count.gte": "20",
-        with_genres: profile.topGenres.join(","),
-      })
-    );
-  }
-
-  // Try each strategy until we get enough results
-  for (let i = 0; i < strategies.length; i++) {
-    try {
-      const url = `https://api.themoviedb.org/3/discover/movie?${strategies[i].toString()}`;
-      console.log(`[Reco] Strategy ${i + 1}: ${url}`);
+        with_genres: profile.topGenres.slice(0, 2).join(","),
+      });
+      const url = `https://api.themoviedb.org/3/discover/movie?${params.toString()}`;
+      console.log(`[Reco] Discover (global fallback): ${url}`);
       const res = await fetchWithTimeout(url);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (data.results && data.results.length >= 5) {
-        console.log(`[Reco] Strategy ${i + 1} returned ${data.results.length} results`);
-        return data;
+      if (res.ok) {
+        const data = await res.json();
+        addMovies(data.results || [], "Discover:global", 5);
       }
-      console.log(`[Reco] Strategy ${i + 1} returned only ${data.results?.length || 0} results, trying next`);
     } catch (err) {
-      console.warn(`[Reco] Strategy ${i + 1} failed:`, err.message);
+      console.warn("[Reco] Discover global failed:", err.message);
     }
   }
 
-  // Ultimate fallback to trending
-  console.log(`[Reco] All strategies exhausted, falling back to trending`);
-  return fetchTrending(page);
+  // ===== Merge, rank, and paginate =====
+  if (allMovies.size === 0) {
+    console.log("[Reco] No results from any source, falling back to trending");
+    return fetchTrending(page);
+  }
+
+  // Prefer user's primary language, but also boost secondary languages
+  const langSet = new Set(profile.topLanguages);
+
+  // Sort: source bonus + language match bonus + popularity
+  const ranked = Array.from(allMovies.values()).sort((a, b) => {
+    const langBonusA = a.original_language === profile.topLanguages[0] ? 20 : langSet.has(a.original_language) ? 8 : 0;
+    const langBonusB = b.original_language === profile.topLanguages[0] ? 20 : langSet.has(b.original_language) ? 8 : 0;
+    const scoreA = (sourceScores.get(a.id) || 0) + langBonusA + (a.popularity || 0) * 0.1;
+    const scoreB = (sourceScores.get(b.id) || 0) + langBonusB + (b.popularity || 0) * 0.1;
+    return scoreB - scoreA;
+  });
+
+  // Paginate (20 per page)
+  const perPage = 20;
+  const startIdx = (page - 1) * perPage;
+  const paginatedResults = ranked.slice(startIdx, startIdx + perPage);
+
+  console.log(`[Reco] Final: ${ranked.length} total movies, returning page ${page} with ${paginatedResults.length} results`);
+
+  return {
+    results: paginatedResults,
+    page,
+    total_pages: Math.ceil(ranked.length / perPage),
+    total_results: ranked.length,
+  };
 };
 
 /**

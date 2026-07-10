@@ -1,6 +1,6 @@
 # Chitram
 
-Chitram is a full-stack cinema discovery platform where users can explore movies, search by multiple filters, view cast and crew details, save favorites, create custom movie lists, and share public lists with others.
+Chitram is an advanced, full-stack cinema and TV show discovery platform. It goes beyond simple TMDB search by offering a highly personalized, AI-driven recommendation engine that learns from user interactions, supports natural language semantic search, and provides deep dives into movie, series, season, episode, and cast details.
 
 ## Author
 
@@ -13,6 +13,7 @@ Chitram is a full-stack cinema discovery platform where users can explore movies
 - [Overview](#overview)
 - [Core Features](#core-features)
 - [Tech Stack](#tech-stack)
+- [Advanced Recommendation Engine](#advanced-recommendation-engine)
 - [Project Structure](#project-structure)
 - [TMDB API Integration](#tmdb-api-integration)
 - [How Users Can Use Chitram](#how-users-can-use-chitram)
@@ -26,53 +27,42 @@ Chitram is a full-stack cinema discovery platform where users can explore movies
 
 ## Overview
 
-Chitram helps movie lovers:
+Chitram is built for real movie lovers, offering features like:
 
-- Discover trending and curated movie sections
-- Search movies, people, and genres
-- Get rich movie detail pages (cast, crew, trailer videos, similar movies)
-- Manage favorites and personal lists
-- Share public lists through a direct link
+- Discover trending, classics, and regional/language-specific curated sections.
+- Search movies, TV series, actors, and directors using standard text or **Natural Language (AI Semantic Search)**.
+- Deep, rich detail pages for Movies, Series, Seasons, Episodes, and Actors (including trailers and cast filmographies).
+- Direct high-quality image downloading directly from galleries (bypassing CORS via backend proxy).
+- A powerful tracking system that silently builds a user profile (Top Genres, Languages, Actors, Directors) to power a multi-source recommendation engine.
+- Manage favorites, create custom lists, and share public lists through direct links.
 
-The app uses **TMDB** as its movie data source and adds user-specific features through a custom backend with authentication and persistence.
+The app uses **TMDB** as its media data source and adds user-specific features through a custom backend with authentication and persistence.
 
 ---
 
 ## Core Features
 
-### 1) Discovery & Search
+### 1) Smart Discovery & AI Search
+- **AI Semantic Search:** Powered by `ai.service.js`, allowing users to search using natural language.
+- **Explore Sections:** Trending, classics, now playing, upcoming, language-based, and genre-based sections.
+- **Infinite Scrolling:** Seamless endless scrolling on recommendation and explore feeds.
 
-- Explore sections: trending, classics, now playing, upcoming, language and genre-based sections
-- Search by movie name, person name, and genre
-- Language filters and sorting support in UI
+### 2) Deep Media Experience
+- Full support for **Movies** and **TV Series** (down to Season and Episode levels).
+- **Actor/Director Profiles:** View complete filmographies and popularity metrics.
+- **Direct Image Downloads:** Users can download high-res posters and backdrops directly to their device.
+- Embedded trailers, similar media, and cast/crew lists.
 
-### 2) Movie Detail Experience
+### 3) Advanced Recommendations & Tracking
+- **Interaction Tracking:** The backend silently tracks actions (`view_movie`, `view_series`, `add_favorite`, `search`, `view_person`) to build a dynamic preference profile.
+- **Redis Caching:** Lightning-fast response times using Redis to cache TMDB responses, user profiles, and generated recommendations.
 
-- Poster, backdrop, runtime, release date, language, ratings, votes
-- Cast and crew tabs
-- Embedded trailer/videos tab
-- Similar movies section
+### 4) Authentication & User Management
+- Secure JWT-based Authentication (Register, Login, Google OAuth).
+- Forgot Password flow with OTP verification (powered by Resend via `mail.service.js`).
+- Custom Favorites and Public/Private Lists with shareable links.
 
-### 3) Authentication
-
-- Register/Login
-- JWT-based protected APIs
-- Forgot password endpoint
-
-### 4) Favorites
-
-- Add/remove favorite movies for logged-in users
-- Fetch personalized favorites list
-
-### 5) Custom Lists + Sharing
-
-- Create/delete personal lists
-- Add movies to a list
-- Toggle list visibility (private/public)
-- Public lists can be shared as links and viewed via list detail page
-
-### 6) Responsive UX
-
+### 5) Responsive UX
 - Mobile-first responsive design
 - Bottom tab navigation on mobile (YouTube-style pattern)
 
@@ -81,25 +71,37 @@ The app uses **TMDB** as its movie data source and adds user-specific features t
 ## Tech Stack
 
 ### Frontend
-
 - React 18 + Vite
 - React Router
 - Tailwind CSS + shadcn/ui + Radix UI
-- Framer Motion
-- Axios
-- TanStack Query
+- Framer Motion (for micro-animations)
+- Axios & TanStack Query
 
 ### Backend
-
 - Node.js + Express
-- MongoDB + Mongoose
-- JWT Authentication
-- bcryptjs
-- CORS + dotenv
+- MongoDB + Mongoose (Database & User/Interaction Models)
+- Redis (Caching & Session speedups)
+- JWT & bcryptjs (Security)
+- Docker & Docker Compose (Containerization)
 
-### External Data Provider
-
+### External Services
 - TMDB (The Movie Database) API
+- Resend (Transactional Emails)
+- Google OAuth 2.0
+- AI Provider (for Semantic Search generation)
+
+---
+
+## Advanced Recommendation Engine
+
+Chitram features a completely custom, multi-source recommendation pipeline built internally (`recommendation.service.js`). Instead of relying on generic TMDB filters, it ranks media by merging multiple strategies:
+
+1. **Direct Filmography Pulls (Highest Priority):** Fetches the complete movie history of the user's top 5 favorite Actors/Directors.
+2. **TMDB Deep Analysis:** Pulls TMDB's internal recommendations for the user's top 5 favorited or listed movies.
+3. **Language-Specific Discovery:** Runs genre-based discovery queries strictly locked to the user's preferred viewing languages (e.g., Telugu, Hindi, English).
+4. **Global Fallback:** A broad net for highly-rated movies in preferred genres.
+
+All sources are merged, deduplicated, and ranked using a custom scoring algorithm that applies bonuses for matching the user's primary language and actor preferences, ensuring regional cinema fans don't get flooded with generic Hollywood results.
 
 ---
 
@@ -108,41 +110,27 @@ The app uses **TMDB** as its movie data source and adds user-specific features t
 ```text
 Chitram/
 ├── backend/
-│   ├── controllers/
-│   │   ├── auth.controller.js
-│   │   ├── favourite.controller.js
-│   │   ├── list.controller.js
-│   │   └── search.controller.js
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── models/
-│   │   ├── favourite.model.js
-│   │   ├── list.model.js
-│   │   ├── listItem.model.js
-│   │   └── user.model.js
-│   ├── routes/
-│   │   ├── auth.route.js
-│   │   ├── favourite.route.js
-│   │   ├── list.route.js
-│   │   └── search.route.js
-│   ├── package.json
+│   ├── controllers/ (auth, favourite, interaction, list, recommendation, search)
+│   ├── middleware/  (auth.js, cache.js)
+│   ├── models/      (User, List, ListItem, Favourite, Interaction)
+│   ├── routes/      (API Routing)
+│   ├── services/    (ai, interaction, mail, recommendation, redis)
+│   ├── .env
 │   └── server.js
 │
 ├── frontend/
-│   ├── public/
-│   │   ├── _redirects
-│   │   └── robots.txt
+│   ├── public/      (_redirects, robots.txt)
 │   ├── src/
-│   │   ├── components/
-│   │   ├── contexts/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── pages/
+│   │   ├── components/ (MovieCard, Navbar, Footer, etc.)
+│   │   ├── contexts/   (AuthContext)
+│   │   ├── hooks/      (useTracker)
+│   │   ├── pages/      (Explore, Profile, Detail pages, Search, Auth)
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── package.json
 │   └── vite.config.js
 │
+├── compose.yaml     (Docker orchestration)
+├── .env             (Root env for Docker build args)
 └── README.md
 ```
 
@@ -150,22 +138,21 @@ Chitram/
 
 ## TMDB API Integration
 
-Chitram backend consumes TMDB endpoints in `search.controller.js`.
+Chitram backend consumes TMDB endpoints heavily, particularly in `search.controller.js` and `recommendation.service.js`.
 
 ### What is used from TMDB
 
-- Movie search
-- Person search
-- Actor details + credits
+- Movie, TV Series, Season, and Episode search/details
+- Person search and Actor details + credits
 - Director filmography extraction
 - Discover by genre/language
 - Trending/Top rated/Now playing/Upcoming feeds
 - Movie details by ID with appended `credits`, `videos`, and `similar`
+- Multi-source fallback recommendations
 
 ### Required key
 
 Set `API_KEY` in backend environment variables (TMDB API key).
-
 Get your key from: https://www.themoviedb.org/settings/api
 
 ---
@@ -173,55 +160,54 @@ Get your key from: https://www.themoviedb.org/settings/api
 ## How Users Can Use Chitram
 
 ### For visitors
-
 1. Open homepage and explore sections
-2. Search for movies or people
-3. Open movie details and trailers
+2. Search for movies or people (standard or Semantic AI search)
+3. Open media details, watch trailers, and download posters
 
 ### For registered users
-
 1. Create an account and login
-2. Add movies to favorites
-3. Create custom lists
-4. Add movies to lists
-5. Mark list as public to enable link sharing
-6. Share list link so friends can view list detail page
+2. Add movies/series to favorites
+3. Build a personalized recommendation profile automatically as you browse
+4. Create custom lists and add media to them
+5. Mark lists as public to enable link sharing
+6. Share list link so friends can view your custom collections
 
 ---
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+The project uses a clean environment variable setup:
 
+### 1) Root (`/.env`)
+Used by Docker Compose to pass build arguments to the frontend container.
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_PUBLIC_APP_URL=http://localhost:8080
+VITE_GOOGLE_CLIENT_ID=your-google-oauth-client-id
+```
+
+### 2) Backend (`/backend/.env`)
+Contains all secure keys and database strings.
 ```env
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
+REDIS_URL=redis://redis:6379
 JWT_SECRET=your_jwt_secret
 API_KEY=your_tmdb_api_key
-FRONTEND_URL=http://localhost:5173,https://your-frontend-domain.com
-RENDER_EXTERNAL_URL=https://your-backend-domain.onrender.com
+FRONTEND_URL=http://localhost:8080
 SMTP_HOST=smtp.resend.com
 SMTP_PORT=465
 SMTP_USER=resend
 SMTP_PASS=re_your_resend_api_key
-SMTP_FROM="Chitram <no-reply@your-verified-domain.com>"
+SMTP_FROM="Chitram <no-reply@your-domain.com>"
 SHOW_DEV_OTP=false
 ALLOW_DEV_OTP_LOG=false
 ```
 
-### Frontend (`frontend/.env.production` and/or `frontend/.env`)
+### 3) Frontend Production (`/frontend/.env.production`)
+*Optional:* Only required if you are building the frontend manually (e.g., Vercel, Netlify) outside of the provided Docker setup.
 
-```env
-VITE_API_BASE_URL=https://your-backend-domain.onrender.com/api
-VITE_PUBLIC_APP_URL=https://your-frontend-domain.com
-```
-
-> `VITE_PUBLIC_APP_URL` is used while generating share links for public lists.
-
-Copy `backend/.env.example` and `frontend/.env.example` as starting points. Never
-commit real `.env` files.
-
-### Resend email setup
+### Resend Email Setup
 
 1. Add your sending domain in Resend.
 2. Add every DKIM, SPF/MX, and SPF/TXT record shown by Resend to your DNS provider.
@@ -229,48 +215,46 @@ commit real `.env` files.
 4. Use an address on that verified domain in `SMTP_FROM`.
 5. Run `npm run verify:email --prefix backend` to verify SMTP authentication.
 
-SMTP authentication alone does not verify the sender domain. Resend rejects OTP
-emails until the domain's DNS records are verified.
+SMTP authentication alone does not verify the sender domain. Resend rejects OTP emails until the domain's DNS records are verified.
 
 ---
 
 ## Run Locally
 
-### Docker (recommended, one command)
+### Docker (Recommended, one command)
 
-Docker Desktop must be running. Configure `backend/.env`, then copy the root
-`.env.example` to `.env` and set the Google OAuth web client ID used by Vite.
+Chitram is fully containerized (Frontend, Backend, and Redis).
+Make sure Docker Desktop is running. Configure `backend/.env`, then copy the root `.env.example` to `.env` and set your Google OAuth client ID.
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-Open `http://localhost:8080`. The API is exposed on `http://localhost:5000`.
-Stop everything with `docker compose down`.
+- **Frontend:** `http://localhost:8080`
+- **Backend API:** `http://localhost:5000`
+- Stop the app: `docker compose down`
 
-### Native development (hot reload)
+### Native Development (Hot Reload)
+
+If you prefer to run without Docker (requires Node.js, MongoDB, and Redis installed locally):
 
 #### 1) Clone repository
-
 ```bash
 git clone <your-repo-url>
 cd Chitram
 ```
 
 #### 2) Install dependencies
-
 ```bash
 npm install
 npm run install:apps
 ```
 
 #### 3) Configure environment variables
-
-- Add backend `.env` with MongoDB, JWT, and TMDB key
-- Add frontend `.env` (or `.env.production`) with backend API URL and public app URL
+- Add backend `.env` with MongoDB, Redis, JWT, and TMDB keys.
+- Ensure the root `.env` has the correct API and frontend URLs.
 
 #### 4) Start both applications
-
 ```bash
 npm run dev
 ```
@@ -284,7 +268,6 @@ Frontend default: `http://localhost:8080`
 Base URL: `/api`
 
 ### Auth
-
 - `POST /auth/register`
 - `POST /auth/verify-register-otp`
 - `POST /auth/resend-register-otp`
@@ -293,14 +276,17 @@ Base URL: `/api`
 - `POST /auth/forgot-password/request-otp`
 - `POST /auth/forgot-password/reset`
 
-### Favorites (Protected)
+### Recommendations & Tracking
+- `POST /interact`
+- `GET /recommend/personalized`
+- `GET /recommend/recently-viewed`
 
+### Favorites (Protected)
 - `POST /favourite/addFavorite`
 - `DELETE /favourite/removeFavorite/:movieId`
 - `GET /favourite/getFavorites`
 
 ### Lists
-
 - `GET /lists` (Protected)
 - `POST /lists` (Protected)
 - `POST /lists/:listId/movie` (Protected)
@@ -309,8 +295,7 @@ Base URL: `/api`
 - `DELETE /lists/:listId` (Protected)
 - `GET /lists/public/:listId` (Public)
 
-### Search / TMDB Proxy
-
+### Search & Media Proxy
 - `GET /search/exploreMovies`
 - `GET /search/searchMovie`
 - `GET /search/searchPerson`
@@ -318,14 +303,14 @@ Base URL: `/api`
 - `GET /search/searchDirector`
 - `GET /search/searchMovieByGenre`
 - `GET /search/searchMovie/:id`
+- `GET /search/download-image` (Bypasses CORS for direct downloads)
 
 ---
 
 ## Deployment Notes
 
 - Frontend is configured for static hosting.
-- Public list links are generated using frontend env var:
-  - `VITE_PUBLIC_APP_URL`
+- Public list links are generated using frontend env var: `VITE_PUBLIC_APP_URL`
 - If hosting has strict path handling, ensure SPA fallback is enabled (`/_redirects` already exists in `frontend/public`).
 
 ---
