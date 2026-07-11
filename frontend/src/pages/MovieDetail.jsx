@@ -30,6 +30,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
+import ReviewSection from "@/components/ReviewSection";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -1156,6 +1157,14 @@ const MovieDetail = () => {
             </div>
           </section>
         )}
+
+        {/* Community Reviews */}
+        <ReviewSection
+          targetId={id}
+          targetType="movie"
+          targetTitle={movie.title}
+          targetPoster={movie.poster_path}
+        />
 
         {movie.similar?.results && movie.similar.results.length > 0 && (
           <section className="py-16">

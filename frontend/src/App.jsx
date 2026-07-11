@@ -18,7 +18,9 @@ import SearchPage from "./pages/Search";
 import MovieDetail from "./pages/MovieDetail";
 import ActorDetail from "./pages/ActorDetail";
 import Recommend from "./pages/Recommend";
+import Community from "./pages/Community";
 import Profile from "./pages/Profile";
+import PublicProfile from "./pages/PublicProfile";
 import ListDetail from "./pages/ListDetail";
 import SeriesDetail from "./pages/SeriesDetail";
 import SeasonDetail from "./pages/SeasonDetail";
@@ -63,7 +65,9 @@ const AppRoutes = () => {
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/person/:id" element={<ActorDetail />} />
         <Route path="/recommend" element={<Recommend />} />
+        <Route path="/community" element={<Community />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/user/:username" element={<PublicProfile />} />
         <Route path="/list/:id" element={<ListDetail />} />
         <Route path="/series/:id" element={<SeriesDetail />} />
         <Route

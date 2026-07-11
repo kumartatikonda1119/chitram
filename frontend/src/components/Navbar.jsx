@@ -8,6 +8,7 @@ import {
   Compass,
   Clapperboard,
   Search,
+  Users,
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +17,7 @@ const navItems = [
   { label: "Home", path: "/" },
   { label: "Explore", path: "/explore" },
   { label: "Search", path: "/search" },
+  { label: "Community", path: "/community" },
   { label: "Recommend", path: "/recommend" },
 ];
 
@@ -29,7 +31,7 @@ const Navbar = () => {
     { label: "Home", path: "/", icon: Home },
     { label: "Explore", path: "/explore", icon: Compass },
     { label: "Search", path: "/search", icon: Search },
-    { label: "Recommend", path: "/recommend", icon: Clapperboard },
+    { label: "Community", path: "/community", icon: Users },
     { label: "You", path: user ? "/profile" : "/login", icon: User },
   ];
 

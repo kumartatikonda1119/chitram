@@ -8,6 +8,11 @@ import favoriteRoutes from "./routes/favourite.route.js";
 import listRoutes from "./routes/list.route.js";
 import interactionRoutes from "./routes/interaction.route.js";
 import recommendationRoutes from "./routes/recommendation.route.js";
+import reviewRoutes from "./routes/review.route.js";
+import profileRoutes from "./routes/profile.route.js";
+import followRoutes from "./routes/follow.route.js";
+import communityRoutes from "./routes/community.route.js";
+import postRoutes from "./routes/post.route.js";
 import cors from "cors";
 import {
   getMailConfigurationStatus,
@@ -86,6 +91,11 @@ app.use("/api/auth", authRoute);
 app.use("/api/lists", listRoutes);
 app.use("/api/interactions", interactionRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/follow", followRoutes);
+app.use("/api/community", communityRoutes);
+app.use("/api/posts", postRoutes);
 app.get("/profile", protect, (req, res) => {
   res.json({ message: "Protected route accessed", user: req.user });
 });

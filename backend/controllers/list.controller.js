@@ -2,6 +2,7 @@ import ListItem from "../models/listItem.model.js";
 import List from "../models/list.model.js";
 import { getCache, setCache, delCache } from "../services/redis.service.js";
 import { trackInteraction } from "../services/interaction.service.js";
+import Activity from "../models/activity.model.js";
 
 const LISTS_TTL = 300; // 5 minutes
 const PUBLIC_LIST_TTL = 600; // 10 minutes
@@ -29,6 +30,14 @@ export const createList = async (req, res) => {
     }).catch(() => {});
 
     res.status(201).json(list);
+
+    // Generate feed activity (fire-and-forget)
+    Activity.create({
+      userId,
+      type: "list_created",
+      refId: list._id.toString(),
+      meta: { listName: name },
+    }).catch((err) => console.error("Activity creation failed:", err));
   } catch (error) {
     res.status(500).json({ error: "Failed to create list" });
   }

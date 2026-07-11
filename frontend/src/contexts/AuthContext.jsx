@@ -152,6 +152,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = (updatedFields) => {
+    const merged = { ...user, ...updatedFields };
+    localStorage.setItem("user", JSON.stringify(merged));
+    setUser(merged);
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -170,6 +176,7 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogle,
         requestPasswordResetOtp,
         resetPasswordWithOtp,
+        updateProfile,
         logout,
       }}
     >

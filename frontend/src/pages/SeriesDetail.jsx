@@ -32,6 +32,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
+import ReviewSection from "@/components/ReviewSection";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -1394,6 +1395,14 @@ const SeriesDetail = () => {
             </div>
           </section>
         )}
+
+        {/* Community Reviews */}
+        <ReviewSection
+          targetId={id}
+          targetType="tv"
+          targetTitle={series.name}
+          targetPoster={series.poster_path}
+        />
 
         {/* Recommendations */}
         {series.recommendations?.results &&

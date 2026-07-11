@@ -37,6 +37,15 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    isPublic: {
+      type: Boolean,
+      default: true,
+    },
+    bio: {
+      type: String,
+      maxlength: 500,
+      default: "",
+    },
   },
   {
     timestamps: true,

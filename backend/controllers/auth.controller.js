@@ -25,6 +25,8 @@ const sanitizeUser = (user) => ({
   email: user.email,
   avatar: user.avatar,
   authProviders: user.authProviders,
+  isPublic: user.isPublic,
+  bio: user.bio,
 });
 
 const buildOtpCode = () => `${randomInt(100000, 1000000)}`;

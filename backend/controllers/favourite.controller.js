@@ -1,6 +1,7 @@
 import Favorite from "../models/favourite.model.js";
 import { getCache, setCache, delCache } from "../services/redis.service.js";
 import { trackInteraction } from "../services/interaction.service.js";
+import Activity from "../models/activity.model.js";
 
 const FAVOURITES_TTL = 300; // 5 minutes
 
@@ -28,6 +29,14 @@ export const addFavorite = async (req, res) => {
       message: "Movie added to favorites",
       favorite,
     });
+
+    // Generate feed activity (fire-and-forget)
+    Activity.create({
+      userId,
+      type: "favorite_added",
+      refId: String(movieId),
+      meta: { movieId },
+    }).catch((err) => console.error("Activity creation failed:", err));
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ error: "Already in favorites" });
