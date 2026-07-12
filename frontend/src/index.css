@@ -6,45 +6,55 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 20 15% 10%;
+    /* Backgrounds */
+    --background: 210 20% 98%; /* Crisp, modern very light slate-gray */
+    --foreground: 220 30% 10%; /* Deep, almost-black slate for sharp text */
 
-    --card: 40 20% 97%;
-    --card-foreground: 20 15% 10%;
+    /* Cards */
+    --card: 0 0% 100%; /* Pure white to pop against the background */
+    --card-foreground: 220 30% 10%;
 
+    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 20 15% 10%;
+    --popover-foreground: 220 30% 10%;
 
-    --primary: 38 92% 50%;
+    /* Primary (Amber - keep it punchy!) */
+    --primary: 38 95% 55%; 
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 15% 93%;
-    --secondary-foreground: 20 15% 15%;
+    /* Secondary (Buttons, Pills) */
+    --secondary: 210 15% 94%; 
+    --secondary-foreground: 220 30% 15%;
 
-    --muted: 38 10% 90%;
-    --muted-foreground: 20 8% 40%;
+    /* Muted (Disabled, Subtext) */
+    --muted: 210 15% 92%;
+    --muted-foreground: 215 15% 45%;
 
-    --accent: 38 50% 92%;
-    --accent-foreground: 20 15% 10%;
+    /* Accents (Hover states) */
+    --accent: 38 100% 95%; /* Super light amber for hover */
+    --accent-foreground: 38 90% 35%; /* Dark amber text */
 
-    --destructive: 0 72% 51%;
+    /* States & Borders */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+    --border: 210 15% 88%;
+    --input: 210 15% 88%;
+    --ring: 38 95% 55%;
 
-    --border: 38 15% 85%;
-    --input: 38 10% 88%;
-    --ring: 38 92% 50%;
+    --radius: 0.75rem; /* Slightly softer corners look more premium */
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 40 15% 97%;
-    --sidebar-foreground: 20 15% 10%;
-    --sidebar-primary: 38 92% 50%;
+    /* Sidebar (if used) */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 30% 10%;
+    --sidebar-primary: 38 95% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 38 15% 93%;
-    --sidebar-accent-foreground: 20 15% 15%;
-    --sidebar-border: 38 15% 85%;
-    --sidebar-ring: 38 92% 50%;
-    --chart-1: 38 92% 50%;
+    --sidebar-accent: 210 15% 94%;
+    --sidebar-accent-foreground: 220 30% 15%;
+    --sidebar-border: 210 15% 88%;
+    --sidebar-ring: 38 95% 55%;
+    
+    /* Charts */
+    --chart-1: 38 95% 55%;
     --chart-2: 160 50% 40%;
     --chart-3: 30 70% 50%;
     --chart-4: 280 55% 55%;
@@ -138,7 +148,10 @@
     display: none;
   }
   .glass {
-    @apply bg-background/70 backdrop-blur-xl border border-border/50 shadow-sm;
+    @apply bg-card/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+  }
+  .dark .glass {
+    @apply bg-background/60 border-border/40 shadow-none;
   }
   .font-display {
     font-family: "Playfair Display", serif;
