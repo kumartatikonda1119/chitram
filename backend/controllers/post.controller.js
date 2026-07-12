@@ -68,8 +68,11 @@ export const getPosts = async (req, res) => {
       .limit(limit)
       .lean();
 
-    // Only show posts from public profiles
-    const publicPosts = posts.filter((p) => p.userId?.isPublic);
+    // Show posts from public profiles + current user's own posts
+    const currentUserId = req.user?.userId?.toString();
+    const publicPosts = posts.filter(
+      (p) => p.userId?.isPublic || p.userId?._id?.toString() === currentUserId,
+    );
 
     // Attach comment counts
     const postIds = publicPosts.map((p) => p._id);
