@@ -68,20 +68,17 @@ export const getPosts = async (req, res) => {
       .limit(limit)
       .lean();
 
-    // Show posts from public profiles + current user's own posts
-    const currentUserId = req.user?.userId?.toString();
-    const publicPosts = posts.filter(
-      (p) => p.userId?.isPublic || p.userId?._id?.toString() === currentUserId,
-    );
+    // Discussions are public conversations — show all posts
+    // Profile privacy only hides the profile page, not community posts
 
     // Attach comment counts
-    const postIds = publicPosts.map((p) => p._id);
+    const postIds = posts.map((p) => p._id);
     const commentCounts = await Comment.aggregate([
       { $match: { postId: { $in: postIds } } },
       { $group: { _id: "$postId", count: { $sum: 1 } } },
     ]);
     const countMap = Object.fromEntries(commentCounts.map((c) => [c._id.toString(), c.count]));
-    const postsWithCounts = publicPosts.map((p) => ({
+    const postsWithCounts = posts.map((p) => ({
       ...p,
       commentCount: countMap[p._id.toString()] || 0,
     }));
