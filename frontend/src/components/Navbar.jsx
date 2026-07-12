@@ -9,6 +9,7 @@ import {
   Clapperboard,
   Search,
   Users,
+  Sparkles,
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +33,7 @@ const Navbar = () => {
     { label: "Explore", path: "/explore", icon: Compass },
     { label: "Search", path: "/search", icon: Search },
     { label: "Community", path: "/community", icon: Users },
+    { label: "Recommend", path: "/recommend", icon: Sparkles },
     { label: "You", path: user ? "/profile" : "/login", icon: User },
   ];
 
@@ -124,7 +126,7 @@ const Navbar = () => {
       </nav>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="grid grid-cols-5 h-16 px-1">
+        <div className="grid grid-cols-6 h-16 px-1">
           {mobileTabItems.map((item) => {
             const Icon = item.icon;
             const active = isActiveTab(item.path);

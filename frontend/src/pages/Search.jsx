@@ -230,6 +230,8 @@ const SearchPage = () => {
         const response = await axios.post(`${API_BASE_URL}/smart`, {
           query,
           type: searchType,
+          genre: selectedGenre || undefined,
+          language: selectedLang || undefined,
         });
 
         const data = response.data.data || [];
@@ -323,124 +325,171 @@ const SearchPage = () => {
             transition={{ delay: 0.1 }}
             className="mb-8"
           >
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <div className="relative flex-1">
-                <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={query}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => {
-                    if (suggestions.length > 0) setShowSuggestions(true);
-                  }}
-                  onBlur={() => {
-                    // Slight delay to allow clicks on suggestions to register
-                    setTimeout(() => setShowSuggestions(false), 200);
-                  }}
-                  placeholder={
-                    searchType === "movie"
-                      ? 'Try "movie about dreams inside dreams"...'
-                      : searchType === "tv"
-                        ? 'Try "show about chemistry teacher"...'
-                        : searchType === "person"
-                          ? "Search for a person..."
-                          : "Select a genre below..."
-                  }
-                  className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-2xl glass text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                />
-
-                {/* Autocomplete Dropdown */}
-                <AnimatePresence>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <motion.div
-                      ref={suggestionsRef}
-                      initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute z-50 left-0 right-0 mt-2 rounded-2xl glass border border-border shadow-2xl overflow-hidden"
-                    >
-                      {suggestions.map((item, index) => (
-                        <button
-                          key={`${item.type}-${item.id}`}
-                          onClick={() => handleSuggestionClick(item)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                            index === selectedSuggestionIndex
-                              ? "bg-primary/15 text-foreground"
-                              : "hover:bg-secondary/80 text-foreground"
-                          } ${index < suggestions.length - 1 ? "border-b border-border/50" : ""}`}
-                        >
-                          {/* Poster thumbnail */}
-                          <div className="w-10 h-14 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
-                            {item.poster ? (
-                              <img
-                                src={item.poster}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                                {item.type === "person" ? "👤" : "🎬"}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Title and metadata */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {item.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {item.type === "person"
-                                ? item.department
-                                : item.year || "Unknown year"}
-                            </p>
-                          </div>
-
-                          {/* Type badge */}
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${getTypeBadgeColor(item.type)}`}
-                          >
-                            {getTypeIcon(item.type)}
-                            {item.type}
-                          </span>
-                        </button>
-                      ))}
-
-                      {suggestionsLoading && (
-                        <div className="flex items-center justify-center py-3">
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+            {searchType === "genre" ? (
+              /* ─── Genre Search Mode: show genre + language pills ─── */
+              <div className="p-6 rounded-2xl bg-card border border-border">
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Select Genre</p>
+                  <div className="flex flex-wrap gap-2">
+                    {GENRES.map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() =>
+                          setSelectedGenre(selectedGenre === g.id ? null : g.id)
+                        }
+                        className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all ${selectedGenre === g.id ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+                      >
+                        {g.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Language (optional)</p>
+                  <div className="flex flex-wrap gap-2">
+                    {LANGUAGES.map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() =>
+                          setSelectedLang(selectedLang === l.code ? null : l.code)
+                        }
+                        className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all ${selectedLang === l.code ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+                      >
+                        {l.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => {
+                      handleSearch();
+                    }}
+                    disabled={!selectedGenre || loading}
+                    className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    Search
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  setShowSuggestions(false);
-                  handleSearch();
-                }}
-                disabled={loading}
-                className="px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
-              >
-                {loading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-5 w-5" />
-                )}
-                <span className="hidden sm:inline">Search</span>
-              </button>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="p-3 sm:p-4 rounded-2xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground border border-border"
-                title="Toggle filters"
-              >
-                <SlidersHorizontal className="h-5 w-5" />
-              </button>
-            </div>
+            ) : (
+              /* ─── Text Search Mode: search box + autocomplete ─── */
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className="relative flex-1">
+                  <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      if (suggestions.length > 0) setShowSuggestions(true);
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                    placeholder={
+                      searchType === "movie"
+                        ? 'Try "movie about dreams inside dreams"...'
+                        : searchType === "tv"
+                          ? 'Try "show about chemistry teacher"...'
+                          : "Search for a person..."
+                    }
+                    className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-2xl glass text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  />
+
+                  {/* Autocomplete Dropdown */}
+                  <AnimatePresence>
+                    {showSuggestions && suggestions.length > 0 && (
+                      <motion.div
+                        ref={suggestionsRef}
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute z-50 left-0 right-0 mt-2 rounded-2xl glass border border-border shadow-2xl overflow-hidden"
+                      >
+                        {suggestions.map((item, index) => (
+                          <button
+                            key={`${item.type}-${item.id}`}
+                            onClick={() => handleSuggestionClick(item)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                              index === selectedSuggestionIndex
+                                ? "bg-primary/15 text-foreground"
+                                : "hover:bg-secondary/80 text-foreground"
+                            } ${index < suggestions.length - 1 ? "border-b border-border/50" : ""}`}
+                          >
+                            <div className="w-10 h-14 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
+                              {item.poster ? (
+                                <img
+                                  src={item.poster}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                                  {item.type === "person" ? "👤" : "🎬"}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {item.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.type === "person"
+                                  ? item.department
+                                  : item.year || "Unknown year"}
+                              </p>
+                            </div>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${getTypeBadgeColor(item.type)}`}
+                            >
+                              {getTypeIcon(item.type)}
+                              {item.type}
+                            </span>
+                          </button>
+                        ))}
+
+                        {suggestionsLoading && (
+                          <div className="flex items-center justify-center py-3">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSuggestions(false);
+                    handleSearch();
+                  }}
+                  disabled={loading}
+                  className="px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-5 w-5" />
+                  )}
+                  <span className="hidden sm:inline">Search</span>
+                </button>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="p-3 sm:p-4 rounded-2xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground border border-border"
+                  title="Toggle filters"
+                >
+                  <SlidersHorizontal className="h-5 w-5" />
+                </button>
+              </div>
+            )}
           </motion.div>
 
           <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
@@ -462,7 +511,7 @@ const SearchPage = () => {
             ))}
           </div>
 
-          {showFilters && (
+          {showFilters && searchType !== "genre" && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}

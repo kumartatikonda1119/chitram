@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 
 export const smartSearch = async (req, res) => {
   try {
-    const { query, type } = req.body;
+    const { query, type, genre, language } = req.body;
 
     if (!query || !query.trim()) {
       return res.status(400).json({ error: "Search query is required" });
@@ -60,6 +60,22 @@ export const smartSearch = async (req, res) => {
       }
     }
 
+    // Apply language filter (filter by original_language)
+    let filteredResults = allResults;
+    if (language && searchType !== "person") {
+      filteredResults = filteredResults.filter(
+        (item) => item.original_language === language,
+      );
+    }
+
+    // Apply genre filter (filter by genre_ids)
+    if (genre && searchType !== "person") {
+      const genreId = parseInt(genre);
+      filteredResults = filteredResults.filter(
+        (item) => item.genre_ids && item.genre_ids.includes(genreId),
+      );
+    }
+
     // Track search interaction for authenticated users (fire-and-forget)
     try {
       const authHeader = req.headers.authorization;
@@ -68,7 +84,7 @@ export const smartSearch = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         trackInteraction(decoded.userId, "search", searchType, query.trim(), {
           query: query.trim(),
-          resultCount: allResults.length,
+          resultCount: filteredResults.length,
         }).catch(() => {});
       }
     } catch {
@@ -76,7 +92,7 @@ export const smartSearch = async (req, res) => {
     }
 
     return res.status(200).json({
-      data: allResults,
+      data: filteredResults,
       ai: {
         intent: aiResult.intent,
         rewrittenQueries: queries,

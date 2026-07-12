@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTracker } from "@/hooks/useTracker";
 import { useAuth } from "@/contexts/AuthContext";
-import { recommendationAPI } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -71,7 +70,7 @@ const EXPLORE_SECTIONS = [
 ];
 
 // Sections that should NOT trigger explore_section tracking (they're noise for recommendations)
-const NOISE_SECTIONS = new Set(["recommended", "recently_viewed", "trending"]);
+const NOISE_SECTIONS = new Set(["trending"]);
 
 const createInitialState = () => {
   const state = {};
@@ -93,31 +92,12 @@ const Explore = () => {
   const { user } = useAuth();
 
   // Update initial active tab based on auth state
-  const [featuredSectionId, setFeaturedSectionId] = useState(
-    user ? "recommended" : "trending",
-  );
+  const [featuredSectionId, setFeaturedSectionId] = useState("trending");
   const featuredLoadRef = useRef(null);
   const { track } = useTracker();
 
   const sections = useMemo(() => {
-    if (!user) return EXPLORE_SECTIONS;
-
-    return [
-      {
-        id: "recommended",
-        title: "Recommended For You ⭐",
-        subtitle: "Based on what you watch and search",
-        icon: Star,
-      },
-      EXPLORE_SECTIONS.find((s) => s.id === "trending"),
-      {
-        id: "recently_viewed",
-        title: "Recently Viewed",
-        subtitle: "Jump back into what you were exploring",
-        icon: Clock,
-      },
-      ...EXPLORE_SECTIONS.filter((s) => s.id !== "trending"),
-    ];
+    return EXPLORE_SECTIONS;
   }, [user]);
 
   const featuredSection = useMemo(
@@ -159,15 +139,9 @@ const Explore = () => {
 
       try {
         let response;
-        if (sectionId === "recommended") {
-          response = await recommendationAPI.getPersonalized(page);
-        } else if (sectionId === "recently_viewed") {
-          response = await recommendationAPI.getRecentlyViewed(20);
-        } else {
-          response = await axios.get(`${API_BASE_URL}/exploreMovies`, {
-            params: { section: sectionId, page },
-          });
-        }
+        response = await axios.get(`${API_BASE_URL}/exploreMovies`, {
+          params: { section: sectionId, page },
+        });
 
         const payload = response.data || {};
         const incomingMovies = payload.results || payload.data || [];
