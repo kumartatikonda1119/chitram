@@ -8,15 +8,15 @@
   :root {
     /* Backgrounds */
     --background: 210 20% 98%; /* Crisp, modern very light slate-gray */
-    --foreground: 220 30% 10%; /* Deep, almost-black slate for sharp text */
+    --foreground: 0 0% 0%; /* Pure black text */
 
     /* Cards */
     --card: 0 0% 100%; /* Pure white to pop against the background */
-    --card-foreground: 220 30% 10%;
+    --card-foreground: 0 0% 0%;
 
     /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 10%;
+    --popover-foreground: 0 0% 0%;
 
     /* Primary (Amber - keep it punchy!) */
     --primary: 38 95% 55%; 
@@ -152,6 +152,12 @@
   }
   .dark .glass {
     @apply bg-background/60 border-border/40 shadow-none;
+  }
+  .bg-film-strip {
+    background-image: url("data:image/svg+xml,%3Csvg width='48' height='64' viewBox='0 0 48 64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='64' fill='%23000'/%3E%3Crect x='4' y='4' width='8' height='8' rx='2' fill='%23fff'/%3E%3Crect x='36' y='4' width='8' height='8' rx='2' fill='%23fff'/%3E%3Crect x='4' y='52' width='8' height='8' rx='2' fill='%23fff'/%3E%3Crect x='36' y='52' width='8' height='8' rx='2' fill='%23fff'/%3E%3C/svg%3E");
+  }
+  .dark .bg-film-strip {
+    background-image: url("data:image/svg+xml,%3Csvg width='48' height='64' viewBox='0 0 48 64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='64' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='4' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3C/svg%3E");
   }
   .font-display {
     font-family: "Playfair Display", serif;

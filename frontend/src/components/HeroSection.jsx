@@ -20,18 +20,8 @@ const HeroSection = () => {
       </div>
 
       {/* Film strip decorative elements */}
-      <div
-        className="hidden md:block absolute left-0 top-0 h-full w-12 opacity-5 bg-repeat-y"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='64' viewBox='0 0 48 64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='64' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='4' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3C/svg%3E")`,
-        }}
-      />
-      <div
-        className="hidden md:block absolute right-0 top-0 h-full w-12 opacity-5 bg-repeat-y"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='64' viewBox='0 0 48 64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='64' fill='%23fff'/%3E%3Crect x='4' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='4' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='4' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3Crect x='36' y='52' width='8' height='8' rx='2' fill='%23000'/%3E%3C/svg%3E")`,
-        }}
-      />
+      <div className="hidden md:block absolute left-0 top-0 h-full w-12 opacity-[0.03] dark:opacity-5 bg-repeat-y bg-film-strip" />
+      <div className="hidden md:block absolute right-0 top-0 h-full w-12 opacity-[0.03] dark:opacity-5 bg-repeat-y bg-film-strip" />
 
       <div className="relative z-10 container mx-auto px-4 md:px-6 text-center pt-24 pb-16 max-w-full w-full">
         <motion.div
