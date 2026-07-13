@@ -245,19 +245,24 @@ export const searchDirector = async (req, res) => {
 
 export const searchMovieByGenre = async (req, res) => {
   try {
-    const { id, lang } = req.query;
+    const { id, lang, page = 1 } = req.query;
     if (!id) {
       return res.status(400).json({ error: "genre is required" });
     }
-    let url = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.API_KEY}&with_genres=${id}`;
+    let url = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.API_KEY}&with_genres=${id}&page=${page}`;
     if (lang) {
       url += `&with_original_language=${lang}`;
     }
     const response = await fetch(url);
     const data = await response.json();
-    return res.status(200).json({ data: data.results });
+    return res.status(200).json({ 
+      data: data.results,
+      page: data.page,
+      totalPages: data.total_pages,
+      totalResults: data.total_results
+    });
   } catch (error) {
-    res.status(404).json({ error: error });
+    res.status(500).json({ error: error.message });
   }
 };
 

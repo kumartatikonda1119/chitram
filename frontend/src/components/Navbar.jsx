@@ -10,9 +10,12 @@ import {
   Search,
   Users,
   Sparkles,
+  Bell,
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
+import { notificationAPI } from "@/lib/api";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { label: "Home", path: "/" },
@@ -27,6 +30,16 @@ const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 const Navbar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      notificationAPI
+        .getUnreadCount()
+        .then((res) => setUnreadCount(res.data.count))
+        .catch(console.error);
+    }
+  }, [user, location.pathname]);
 
   const mobileTabItems = [
     { label: "Home", path: "/", icon: Home },
@@ -95,6 +108,17 @@ const Navbar = () => {
 
               {user ? (
                 <>
+                  <Link
+                    to="/notifications"
+                    onClick={scrollTop}
+                    className="relative p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+                    title="Notifications"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background" />
+                    )}
+                  </Link>
                   <Link
                     to="/profile"
                     onClick={scrollTop}

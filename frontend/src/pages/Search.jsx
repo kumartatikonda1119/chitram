@@ -35,6 +35,10 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [sortBy, setSortBy] = useState("popularity_desc");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -196,14 +200,22 @@ const SearchPage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSearch = async () => {
+  const handleSearch = async (pageNumber = 1) => {
     if (!query && !selectedGenre) return;
 
     // Cancel any pending autocomplete requests
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (abortControllerRef.current) abortControllerRef.current.abort();
 
-    setLoading(true);
+    if (pageNumber === 1) {
+      setLoading(true);
+      setResults([]);
+      setPersonResults([]);
+      setSeriesResults([]);
+    } else {
+      setLoadingMore(true);
+    }
+
     setHasSearched(true);
     setShowSuggestions(false);
     setSuggestions([]);
@@ -211,20 +223,32 @@ const SearchPage = () => {
 
     try {
       if (searchType === "genre") {
-        const params = { id: selectedGenre };
+        const params = { id: selectedGenre, page: pageNumber };
         if (selectedLang) params.lang = selectedLang;
 
         const response = await axios.get(`${API_BASE_URL}/searchMovieByGenre`, {
           params,
         });
         const genreData = response.data.data || [];
-        setResults(genreData);
-        setPersonResults([]);
-        setSeriesResults([]);
-        track("search", "genre", selectedGenre, {
-          query: "genre search",
-          resultCount: genreData.length,
-        });
+        
+        if (pageNumber === 1) {
+          setResults(genreData);
+        } else {
+          setResults((prev) => [...prev, ...genreData]);
+        }
+        
+        setPage(pageNumber);
+        setHasMore(response.data.page < response.data.totalPages);
+        if (pageNumber === 1) {
+          setTotalResults(response.data.totalResults || 0);
+        }
+
+        if (pageNumber === 1) {
+          track("search", "genre", selectedGenre, {
+            query: "genre search",
+            resultCount: genreData.length,
+          });
+        }
       } else {
         // Use smart search for all text queries
         const response = await axios.post(`${API_BASE_URL}/smart`, {
@@ -259,12 +283,10 @@ const SearchPage = () => {
         });
       }
     } catch (error) {
-      console.error("Search error:", error);
-      setResults([]);
-      setPersonResults([]);
-      setSeriesResults([]);
+      console.error("Search failed:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -503,6 +525,8 @@ const SearchPage = () => {
                   setSeriesResults([]);
                   setHasSearched(false);
                   setAiInfo(null);
+                  setSelectedGenre(null);
+                  setSelectedLang(null);
                 }}
                 className={`px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${searchType === type.id ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
               >
@@ -523,29 +547,12 @@ const SearchPage = () => {
                 </h3>
                 <button
                   onClick={() => {
-                    setSelectedGenre(null);
                     setSelectedLang(null);
                   }}
                   className="text-xs text-primary hover:underline"
                 >
                   Clear All
                 </button>
-              </div>
-              <div className="mb-4">
-                <p className="text-xs text-muted-foreground mb-2">Genre</p>
-                <div className="flex flex-wrap gap-2">
-                  {GENRES.map((g) => (
-                    <button
-                      key={g.id}
-                      onClick={() =>
-                        setSelectedGenre(selectedGenre === g.id ? null : g.id)
-                      }
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedGenre === g.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
-                    >
-                      {g.name}
-                    </button>
-                  ))}
-                </div>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Language</p>
@@ -617,7 +624,7 @@ const SearchPage = () => {
             <>
               <div className="flex items-center justify-between mb-6">
                 <p className="text-sm text-muted-foreground">
-                  {results.length} results found
+                  {searchType === "genre" ? totalResults : results.length} results found
                 </p>
                 <div className="flex items-center gap-2">
                   <label className="text-sm text-muted-foreground">
@@ -641,6 +648,18 @@ const SearchPage = () => {
                   <MovieCard key={movie.id} movie={movie} index={i} />
                 ))}
               </div>
+              {hasMore && searchType === "genre" && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={() => handleSearch(page + 1)}
+                    disabled={loadingMore}
+                    className="px-6 py-2.5 rounded-lg bg-secondary text-secondary-foreground font-medium hover:bg-muted transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Load More
+                  </button>
+                </div>
+              )}
             </>
           )}
 

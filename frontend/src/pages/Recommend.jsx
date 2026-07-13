@@ -165,7 +165,7 @@ const Recommend = () => {
     },
     {
       id: "genre",
-      label: "Search by Genre",
+      label: "Recommend by Genre",
       icon: Grid3X3,
     },
   ];

@@ -1,6 +1,7 @@
 import Post from "../models/post.model.js";
 import Comment from "../models/comment.model.js";
 import Activity from "../models/activity.model.js";
+import Notification from "../models/notification.model.js";
 
 // POST /api/posts — create a new post
 export const createPost = async (req, res) => {
@@ -168,6 +169,18 @@ export const addComment = async (req, res) => {
       userId,
       content: content.trim(),
     });
+
+    // Notify post owner if someone else replies
+    if (post.userId.toString() !== userId) {
+      Notification.create({
+        recipient: post.userId,
+        sender: userId,
+        type: "post_reply",
+        refId: comment._id,
+      }).catch((err) => {
+        if (err.code !== 11000) console.error("Notification error:", err);
+      });
+    }
 
     const populated = await Comment.findById(comment._id).populate(
       "userId",

@@ -1,6 +1,7 @@
 import Follow from "../models/follow.model.js";
 import User from "../models/user.model.js";
 import Activity from "../models/activity.model.js";
+import Notification from "../models/notification.model.js";
 
 // POST /api/follow/:userId — follow a user
 export const followUser = async (req, res) => {
@@ -36,17 +37,27 @@ export const followUser = async (req, res) => {
 
     await Follow.create({ followerId, followingId, status });
 
-    // Create activity for accepted follows
+    // Create activity and notification for accepted follows
     if (status === "accepted") {
-      await Activity.create({
-        userId: followerId,
-        type: "started_following",
-        refId: followingId,
-        meta: {
-          targetUsername: targetUser.username,
-          targetAvatar: targetUser.avatar,
-        },
-      });
+      await Promise.all([
+        Activity.create({
+          userId: followerId,
+          type: "started_following",
+          refId: followingId,
+          meta: {
+            targetUsername: targetUser.username,
+            targetAvatar: targetUser.avatar,
+          },
+        }),
+        Notification.create({
+          recipient: followingId,
+          sender: followerId,
+          type: "follow",
+          refId: targetUser._id,
+        }).catch((err) => {
+          if (err.code !== 11000) console.error("Notification error:", err);
+        }),
+      ]);
     }
 
     res.status(201).json({ status });

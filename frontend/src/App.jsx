@@ -18,6 +18,7 @@ import SearchPage from "./pages/Search";
 import MovieDetail from "./pages/MovieDetail";
 import ActorDetail from "./pages/ActorDetail";
 import Recommend from "./pages/Recommend";
+import Notifications from "./pages/Notifications";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
@@ -65,6 +66,7 @@ const AppRoutes = () => {
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/person/:id" element={<ActorDetail />} />
         <Route path="/recommend" element={<Recommend />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/community" element={<Community />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/user/:username" element={<PublicProfile />} />

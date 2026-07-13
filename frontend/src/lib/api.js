@@ -99,4 +99,12 @@ export const recommendationAPI = {
     api.get("/recommendations/recently-viewed", { params: { limit } }),
 };
 
+// Notification APIs
+export const notificationAPI = {
+  getAll: (page = 1) => api.get("/notifications", { params: { page } }),
+  getUnreadCount: () => api.get("/notifications/unread-count"),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put("/notifications/read-all"),
+};
+
 export default api;

@@ -70,7 +70,7 @@ router.get(
 router.get(
   "/searchMovieByGenre",
   cacheRoute(
-    (req) => `tmdb:genre:${req.query.id}:${req.query.lang || "all"}`,
+    (req) => `tmdb:genre:${req.query.id}:${req.query.lang || "all"}:${req.query.page || 1}`,
     900,
   ),
   searchMovieByGenre,
