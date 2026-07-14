@@ -61,9 +61,9 @@ const MovieTagger = ({ taggedMovies, setTaggedMovies }) => {
     setSearching(true);
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/search/searchMovie?movie=${encodeURIComponent(q)}`,
+        `${API_BASE_URL}/search/autocomplete?q=${encodeURIComponent(q)}`,
       );
-      setResults((res.data.data || []).slice(0, 8));
+      setResults(res.data.suggestions.filter(s => s.type === "movie" || s.type === "tv").slice(0, 8));
     } catch {
       setResults([]);
     } finally {
@@ -79,7 +79,7 @@ const MovieTagger = ({ taggedMovies, setTaggedMovies }) => {
 
   const addMovie = (movie) => {
     if (taggedMovies.length >= 5) {
-      toast.error("Max 5 movies can be tagged");
+      toast.error("Max 5 movies/series can be tagged");
       return;
     }
     if (taggedMovies.find((m) => m.tmdbId === String(movie.id))) return;
@@ -87,9 +87,9 @@ const MovieTagger = ({ taggedMovies, setTaggedMovies }) => {
       ...taggedMovies,
       {
         tmdbId: String(movie.id),
-        title: movie.title || movie.name,
-        type: movie.media_type === "tv" ? "tv" : "movie",
-        poster: movie.poster_path || "",
+        title: movie.title,
+        type: movie.type,
+        poster: movie.poster ? movie.poster.replace("https://image.tmdb.org/t/p/w92", "") : "",
       },
     ]);
     setOpen(false);
@@ -169,10 +169,10 @@ const MovieTagger = ({ taggedMovies, setTaggedMovies }) => {
                     onClick={() => addMovie(r)}
                     className="w-full flex items-center gap-3 p-3 hover:bg-secondary transition-colors text-left"
                   >
-                    {r.poster_path ? (
+                    {r.poster ? (
                       <img
-                        src={`https://image.tmdb.org/t/p/w92${r.poster_path}`}
-                        alt={r.title || r.name}
+                        src={r.poster}
+                        alt={r.title}
                         className="w-8 h-12 rounded object-cover flex-shrink-0"
                       />
                     ) : (
@@ -182,13 +182,10 @@ const MovieTagger = ({ taggedMovies, setTaggedMovies }) => {
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground line-clamp-1">
-                        {r.title || r.name}
+                        {r.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {(r.release_date || r.first_air_date || "").split(
-                          "-",
-                        )[0]}{" "}
-                        • {r.media_type === "tv" ? "Series" : "Movie"}
+                        {r.year} • {r.type === "tv" ? "Series" : "Movie"}
                       </p>
                     </div>
                   </button>
