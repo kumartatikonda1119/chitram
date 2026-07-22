@@ -6,7 +6,7 @@ import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import axios from "axios";
 import Index from "./pages/Index";
@@ -27,14 +27,21 @@ import SeriesDetail from "./pages/SeriesDetail";
 import SeasonDetail from "./pages/SeasonDetail";
 import EpisodeDetail from "./pages/EpisodeDetail";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import PrivacyPolicy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
 const ScrollRestorer = () => {
   const location = useLocation();
+  const prevPathname = useRef(location.pathname);
+
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [location.pathname, location.hash]);
+    if (prevPathname.current !== location.pathname) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      prevPathname.current = location.pathname;
+    }
+  }, [location.pathname]);
   return null;
 };
 
@@ -80,6 +87,8 @@ const AppRoutes = () => {
           path="/series/:seriesId/season/:seasonNo/episode/:episodeNo"
           element={<EpisodeDetail />}
         />
+        <Route path="/about" element={<About />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </HashRouter>
