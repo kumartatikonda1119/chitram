@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import {
   Star,
   ArrowLeft,
@@ -83,6 +84,12 @@ const SeasonDetail = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title={season ? `${season.name}` : `Season ${seasonNo}`}
+        description={season?.overview || `Watch Season ${seasonNo} episodes, details, and more on Chitram.`}
+        image={season?.poster_path ? `https://image.tmdb.org/t/p/w500${season.poster_path}` : undefined}
+        canonical={`/series/${seriesId}/season/${seasonNo}`}
+      />
       <Navbar />
       <div className="pt-20">
         {/* Header */}

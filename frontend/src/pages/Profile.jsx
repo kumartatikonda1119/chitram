@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import {
   Heart,
   List,
@@ -500,6 +501,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO title="My Profile" noindex />
       <Navbar />
       <div className="pt-24 pb-24 md:pb-16">
         <div className="container mx-auto px-4 md:px-6">

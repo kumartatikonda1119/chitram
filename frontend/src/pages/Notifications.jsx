@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { notificationAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
+import SEO from "@/components/SEO";
 import Footer from "@/components/Footer";
 import { Bell, MessageSquare, UserPlus, Check, CheckCheck } from "lucide-react";
 import { motion } from "framer-motion";
@@ -121,6 +122,7 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Notifications" noindex />
       <Navbar />
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-3xl">
         <div className="flex items-center justify-between mb-8">

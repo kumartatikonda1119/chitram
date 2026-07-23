@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { Star, ArrowLeft, Calendar, Clock, Loader2, Users } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -82,6 +83,12 @@ const EpisodeDetail = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title={`${seriesName || "Series"} S${seasonNo}E${episodeNo} - ${episode.name || "Episode"}`}
+        description={episode.overview || `Watch ${seriesName} Season ${seasonNo} Episode ${episodeNo} details on Chitram.`}
+        image={episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : undefined}
+        canonical={`/series/${seriesId}/season/${seasonNo}/episode/${episodeNo}`}
+      />
       <Navbar />
       <div className="pt-20">
         {/* Episode Still / Hero */}

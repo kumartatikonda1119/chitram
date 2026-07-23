@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { GENRES, LANGUAGES } from "@/lib/types";
 import {
   Sparkles,
@@ -172,6 +173,11 @@ const Recommend = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title="Recommendations"
+        description="Get personalized movie and series recommendations based on your taste. Discover new favorites curated just for you on Chitram."
+        canonical="/recommend"
+      />
       <Navbar />
       <div className="pt-24 pb-24 md:pb-16">
         <div className="container mx-auto px-4 md:px-6">

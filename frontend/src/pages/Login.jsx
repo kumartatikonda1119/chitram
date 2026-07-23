@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Film, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/contexts/AuthContext";
+import SEO from "@/components/SEO";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -56,6 +57,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden w-full">
+      <SEO title="Sign In" description="Sign in to your Chitram account to access your watchlists, recommendations, and community features." canonical="/login" />
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}

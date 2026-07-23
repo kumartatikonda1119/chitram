@@ -14,6 +14,8 @@ import profileRoutes from "./routes/profile.route.js";
 import followRoutes from "./routes/follow.route.js";
 import communityRoutes from "./routes/community.route.js";
 import postRoutes from "./routes/post.route.js";
+import sitemapRoutes from "./routes/sitemap.route.js";
+import seoRoutes from "./routes/seo.route.js";
 import cors from "cors";
 import {
   getMailConfigurationStatus,
@@ -98,6 +100,8 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/follow", followRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api", sitemapRoutes);
+app.use("/seo", seoRoutes);
 app.get("/profile", protect, (req, res) => {
   res.json({ message: "Protected route accessed", user: req.user });
 });

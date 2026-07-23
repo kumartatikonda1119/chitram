@@ -8,10 +8,16 @@ import {
   Film,
 } from "lucide-react";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO 
+        title="About Chitram" 
+        description="Learn about Chitram, a personal cinema companion created by Kumar Tatikonda. Discover its features, technology stack, and the motivation behind the project." 
+        canonical="/about"
+      />
       {/* Header */}
       <div className="container mx-auto px-4 md:px-6 pt-10 pb-20 max-w-3xl">
         <Link

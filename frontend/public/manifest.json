@@ -1,0 +1,17 @@
+{
+  "name": "Chitram - Movie Discovery Platform",
+  "short_name": "Chitram",
+  "description": "Explore movies, TV shows, actors, and filmmakers. Create watchlists, write reviews, and join a community of cinema lovers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/film-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

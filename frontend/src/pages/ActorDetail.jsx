@@ -14,6 +14,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import axios from "axios";
+import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace("/api", "/api/search") ||
@@ -165,6 +167,24 @@ const ActorDetail = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title={person.name}
+        description={person.biography || `Explore ${person.name}'s filmography, biography, and more on Chitram.`}
+        image={person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : undefined}
+        canonical={`/person/${id}`}
+        type="profile"
+      />
+      <StructuredData
+        type="person"
+        data={{
+          id,
+          name: person.name,
+          biography: person.biography,
+          profilePath: person.profile_path,
+          birthday: person.birthday,
+          placeOfBirth: person.place_of_birth,
+        }}
+      />
       <Navbar />
       <div className="pt-20">
         {/* Hero Section */}

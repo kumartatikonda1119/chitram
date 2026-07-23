@@ -7,10 +7,16 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO 
+        title="Privacy Policy" 
+        description="Read Chitram's Privacy Policy. Learn how we securely handle your account data, movie interactions, and community content while respecting your privacy." 
+        canonical="/privacy-policy"
+      />
       <div className="container mx-auto px-4 md:px-6 pt-10 pb-20 max-w-3xl">
         <Link
           to="/"

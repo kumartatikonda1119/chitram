@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { Globe, Loader2, Trash2, Lock } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -130,6 +131,11 @@ const ListDetail = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title={listName || "Watchlist"}
+        description={`Explore the "${listName}" watchlist on Chitram — curated movie and series picks.`}
+        canonical={`/list/${id}`}
+      />
       <Navbar />
       <div className="pt-24 pb-24 md:pb-16">
         <div className="container mx-auto px-4 md:px-6">

@@ -33,6 +33,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
 import ReviewSection from "@/components/ReviewSection";
+import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -402,6 +404,27 @@ const SeriesDetail = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title={`${series.name}${series.first_air_date ? ` (${series.first_air_date.slice(0, 4)})` : ""}`}
+        description={series.overview}
+        image={series.poster_path ? `https://image.tmdb.org/t/p/w500${series.poster_path}` : undefined}
+        canonical={`/series/${id}`}
+        type="video.tv_show"
+      />
+      <StructuredData
+        type="series"
+        data={{
+          id,
+          title: series.name,
+          overview: series.overview,
+          poster: series.poster_path,
+          firstAirDate: series.first_air_date,
+          genres: series.genres?.map((g) => g.name) || [],
+          rating: series.vote_average,
+          voteCount: series.vote_count,
+          numberOfSeasons: series.number_of_seasons,
+        }}
+      />
       <Navbar />
       <div className="pt-20">
         {/* Backdrop */}

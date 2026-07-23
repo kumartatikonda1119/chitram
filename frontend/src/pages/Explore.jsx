@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
+import SEO from "@/components/SEO";
 import { Award, Clock, Flame, Loader2, Star, TrendingUp } from "lucide-react";
 import axios from "axios";
 
@@ -257,6 +258,11 @@ const Explore = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title="Explore Movies & Series"
+        description="Browse trending movies, top rated films, now playing in theatres, upcoming releases, and more on Chitram. Discover your next favorite movie."
+        canonical="/explore"
+      />
       <Navbar />
       <div className="pt-24 pb-16">
         <div className="container mx-auto px-4 md:px-6">

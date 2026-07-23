@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import {
   Users,
   MessageSquare,
@@ -802,6 +803,11 @@ const Community = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Community Discussions & Reviews"
+        description="Join the Chitram community. Share your thoughts on movies and series, participate in discussions, write reviews, and connect with fellow cinema lovers."
+        canonical="/community"
+      />
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8 mt-16">
         {/* Page Header */}

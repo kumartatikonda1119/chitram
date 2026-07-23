@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import HeroSection from "@/components/HeroSection";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 import {
   CRAFTS_DATA,
   BRAIN_SCIENCE_DATA,
@@ -100,6 +102,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title="Movie Discovery Platform"
+        description="Chitram is a modern movie discovery platform where cinema lovers can explore movies, TV shows, actors, and filmmakers, create personalized watchlists, write reviews, join engaging discussions, and receive intelligent recommendations."
+        canonical="/"
+      />
+      <StructuredData type="website" />
       <Navbar />
       <HeroSection />
 

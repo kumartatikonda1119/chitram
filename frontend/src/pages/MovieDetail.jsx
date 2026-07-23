@@ -31,6 +31,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "sonner";
 import ReviewSection from "@/components/ReviewSection";
+import SEO from "@/components/SEO";
+import StructuredData from "@/components/StructuredData";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -447,6 +449,26 @@ const MovieDetail = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden w-full">
+      <SEO
+        title={`${movie.title}${movie.release_date ? ` (${movie.release_date.slice(0, 4)})` : ""}`}
+        description={movie.overview}
+        image={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : undefined}
+        canonical={`/movie/${id}`}
+        type="video.movie"
+      />
+      <StructuredData
+        type="movie"
+        data={{
+          id,
+          title: movie.title,
+          overview: movie.overview,
+          poster: movie.poster_path,
+          releaseDate: movie.release_date,
+          genres: movie.genres?.map((g) => g.name) || [],
+          rating: movie.vote_average,
+          voteCount: movie.vote_count,
+        }}
+      />
       <Navbar />
       <div className="pt-20">
         <div className="relative h-[40vh] md:h-[50vh] bg-secondary overflow-hidden">

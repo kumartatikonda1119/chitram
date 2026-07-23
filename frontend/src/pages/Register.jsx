@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/contexts/AuthContext";
+import SEO from "@/components/SEO";
 import { toast } from "sonner";
 
 const Register = () => {
@@ -111,6 +112,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden w-full">
+      <SEO title="Create Account" description="Join Chitram to discover movies, create watchlists, write reviews, and connect with cinema lovers." canonical="/register" />
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}

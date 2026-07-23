@@ -11,6 +11,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import SEO from "@/components/SEO";
 import { toast } from "sonner";
 
 const ForgotPassword = () => {
@@ -71,6 +72,7 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden w-full">
+      <SEO title="Reset Password" noindex />
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
