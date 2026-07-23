@@ -164,8 +164,8 @@ const Login = () => {
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={() => toast.error("Google login failed")}
-                    theme="filled_black"
-                    shape="pill"
+                    theme="outline"
+                    shape="rectangular"
                     text="continue_with"
                   />
                 )}

@@ -16,6 +16,7 @@ import {
 import axios from "axios";
 import SEO from "@/components/SEO";
 import StructuredData from "@/components/StructuredData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace("/api", "/api/search") ||
@@ -329,17 +330,18 @@ const ActorDetail = () => {
                 </h2>
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <select
-                    value={sortBy}
-                    onChange={(event) => setSortBy(event.target.value)}
-                    className="px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  >
-                    <option value="popularity_desc">Sort: Popularity</option>
-                    <option value="rating_desc">Sort: Rating</option>
-                    <option value="date_desc">Sort: Newest</option>
-                    <option value="date_asc">Sort: Oldest</option>
-                    <option value="title_asc">Sort: Title A-Z</option>
-                  </select>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[180px] bg-secondary text-secondary-foreground border-border rounded-xl h-10">
+                      <SelectValue placeholder="Sort: Popularity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="popularity_desc">Sort: Popularity</SelectItem>
+                      <SelectItem value="rating_desc">Sort: Rating</SelectItem>
+                      <SelectItem value="date_desc">Sort: Newest</SelectItem>
+                      <SelectItem value="date_asc">Sort: Oldest</SelectItem>
+                      <SelectItem value="title_asc">Sort: Title A-Z</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   {/* Tabs */}
                   <div className="flex gap-2 flex-wrap">

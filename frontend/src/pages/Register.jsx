@@ -235,8 +235,8 @@ const Register = () => {
                       <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={() => toast.error("Google signup failed")}
-                        theme="filled_black"
-                        shape="pill"
+                        theme="outline"
+                        shape="rectangular"
                         text="signup_with"
                       />
                     )}
