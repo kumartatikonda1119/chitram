@@ -104,9 +104,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginWithGoogle = async (idToken) => {
+  const loginWithGoogle = async ({ idToken, accessToken }) => {
     try {
-      const response = await authAPI.googleAuth({ idToken });
+      const response = await authAPI.googleAuth({ idToken, accessToken });
       const { token, user } = response.data;
 
       localStorage.setItem("token", token);

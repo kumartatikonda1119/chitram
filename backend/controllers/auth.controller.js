@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { OAuth2Client } from "google-auth-library";
+import axios from "axios";
 import User from "../models/user.model.js";
 import Otp from "../models/otp.model.js";
 import { sendOtpEmail } from "../services/mail.service.js";
@@ -345,28 +346,37 @@ export const login = async (req, res) => {
 
 export const googleAuth = async (req, res) => {
   try {
-    const { idToken } = req.body;
+    const { idToken, accessToken } = req.body;
 
-    if (!idToken) {
+    if (!idToken && !accessToken) {
       return res.status(400).json({ error: "Google token is required" });
     }
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    let payload;
+    if (idToken) {
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } else if (accessToken) {
+      const response = await axios.get(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      payload = response.data;
+    }
 
-    const payload = ticket.getPayload();
-    if (!payload?.email || !payload?.sub) {
+    if (!payload?.email || (!payload?.sub && !payload?.id)) {
       return res.status(400).json({ error: "Invalid Google token payload" });
     }
 
-    if (!payload.email_verified) {
+    if (!payload.email_verified && !accessToken) {
       return res.status(400).json({ error: "Google email is not verified" });
     }
 
     const email = normalizeEmail(payload.email);
-    const googleId = payload.sub;
+    const googleId = payload.sub || payload.id;
     const displayName = payload.name || email.split("@")[0];
     const avatar = payload.picture || null;
 

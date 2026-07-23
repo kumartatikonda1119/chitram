@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
+    "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "chitram": "file:..",
     "cors": "^2.8.6",

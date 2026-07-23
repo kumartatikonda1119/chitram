@@ -159,14 +159,14 @@ const Navbar = () => {
                 key={item.path}
                 to={item.path}
                 onClick={scrollTop}
-                className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1 text-[10px] sm:text-[11px] font-medium transition-colors w-full px-0.5 ${
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="truncate w-full text-center">{item.label}</span>
               </Link>
             );
           })}
