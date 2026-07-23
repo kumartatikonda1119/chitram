@@ -429,7 +429,7 @@ const SearchPage = () => {
                           ? 'Try "show about chemistry teacher"...'
                           : "Search for a person..."
                     }
-                    className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-2xl glass text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                    className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-2xl bg-secondary/50 border border-border text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                   />
 
                   {/* Autocomplete Dropdown */}
